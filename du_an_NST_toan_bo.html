@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧬 Dự Án Phân Tích Hình Thái Nhiễm Sắc Thể (NST)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg-main: #0d1117;
+    --bg-card: #161b22;
+    --bg-sidebar: #010409;
+    --bg-code: #1a1f29;
+    --border: #30363d;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --text-muted: #6e7681;
+    --accent-blue: #58a6ff;
+    --accent-green: #3fb950;
+    --accent-yellow: #d29922;
+    --accent-purple: #bc8cff;
+    --accent-orange: #f0883e;
+    --accent-red: #ff7b72;
+    --accent-teal: #39d353;
+    --tag-a: rgba(255, 123, 114, 0.15);
+    --tag-b: rgba(63, 185, 80, 0.15);
+    --tag-c: rgba(210, 153, 34, 0.15);
+    --sidebar-width: 280px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-main);
+    color: var(--text-primary);
+    display: flex;
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ===== SIDEBAR ===== */
+  #sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    overflow-y: auto;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #sidebar::-webkit-scrollbar { width: 4px; }
+  #sidebar::-webkit-scrollbar-track { background: transparent; }
+  #sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .sidebar-logo {
+    padding: 20px 16px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo h1 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+  }
+  .sidebar-logo .version {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .nav-section { padding: 8px 0; }
+  .nav-section-title {
+    padding: 6px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 4px;
+    margin: 1px 8px;
+    transition: all 0.15s;
+    text-decoration: none;
+    border-left: 2px solid transparent;
+  }
+  .nav-item:hover {
+    background: rgba(88, 166, 255, 0.08);
+    color: var(--text-primary);
+  }
+  .nav-item.active {
+    background: rgba(88, 166, 255, 0.12);
+    color: var(--accent-blue);
+    border-left-color: var(--accent-blue);
+  }
+  .nav-item .icon { font-size: 14px; min-width: 18px; }
+  .nav-item .badge {
+    margin-left: auto;
+    font-size: 10px;
+    background: var(--bg-card);
+    padding: 1px 6px;
+    border-radius: 10px;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  /* ===== MAIN CONTENT ===== */
+  #main {
+    margin-left: var(--sidebar-width);
+    flex: 1;
+    min-height: 100vh;
+  }
+
+  /* ===== TOP BAR ===== */
+  .topbar {
+    position: sticky;
+    top: 0;
+    background: rgba(13, 17, 23, 0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 50;
+  }
+  .topbar-breadcrumb {
+    font-size: 13px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .topbar-breadcrumb span { color: var(--text-primary); font-weight: 500; }
+  .topbar-tags { display: flex; gap: 6px; }
+  .tag {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-weight: 500;
+  }
+  .tag-python { background: rgba(88, 166, 255, 0.15); color: var(--accent-blue); border: 1px solid rgba(88, 166, 255, 0.3); }
+  .tag-tf { background: rgba(240, 136, 62, 0.15); color: var(--accent-orange); border: 1px solid rgba(240, 136, 62, 0.3); }
+  .tag-cv { background: rgba(63, 185, 80, 0.15); color: var(--accent-green); border: 1px solid rgba(63, 185, 80, 0.3); }
+
+  /* ===== SECTIONS ===== */
+  .content-area { padding: 40px; max-width: 1100px; }
+
+  .section { margin-bottom: 60px; scroll-margin-top: 80px; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-num {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: white;
+    flex-shrink: 0;
+  }
+  .section-title { font-size: 20px; font-weight: 600; color: var(--text-primary); }
+
+  /* ===== HERO BANNER ===== */
+  .hero {
+    background: linear-gradient(135deg, rgba(88, 166, 255, 0.08), rgba(188, 140, 255, 0.08));
+    border: 1px solid rgba(88, 166, 255, 0.2);
+    border-radius: 12px;
+    padding: 32px 36px;
+    margin-bottom: 40px;
+  }
+  .hero h1 {
+    font-size: 26px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 10px;
+  }
+  .hero p { color: var(--text-secondary); font-size: 15px; line-height: 1.7; }
+  .hero-badges { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .hero-badge {
+    font-size: 12px; padding: 4px 12px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+
+  /* ===== PIPELINE ===== */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .pipeline-step {
+    display: flex;
+    gap: 0;
+  }
+  .pipeline-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 48px;
+    flex-shrink: 0;
+  }
+  .step-circle {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step-line {
+    width: 2px;
+    flex: 1;
+    min-height: 20px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+  .pipeline-step:last-child .step-line { display: none; }
+
+  .step-card {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  .step-card:hover { border-color: rgba(88, 166, 255, 0.4); }
+  .step-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .step-card-title { font-weight: 600; font-size: 15px; color: var(--text-primary); }
+  .step-card-file {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent-blue);
+    background: rgba(88, 166, 255, 0.1);
+    padding: 2px 8px; border-radius: 4px;
+  }
+  .step-card p { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+  .step-io { display: flex; gap: 12px; flex-wrap: wrap; }
+  .step-io-item {
+    font-size: 11px;
+    display: flex; align-items: center; gap: 5px;
+    color: var(--text-muted);
+  }
+  .step-io-item .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* Colors for steps */
+  .s1 .step-circle { background: rgba(88, 166, 255, 0.2); color: var(--accent-blue); border: 2px solid var(--accent-blue); }
+  .s2 .step-circle { background: rgba(63, 185, 80, 0.2); color: var(--accent-green); border: 2px solid var(--accent-green); }
+  .s3 .step-circle { background: rgba(188, 140, 255, 0.2); color: var(--accent-purple); border: 2px solid var(--accent-purple); }
+  .s4 .step-circle { background: rgba(210, 153, 34, 0.2); color: var(--accent-yellow); border: 2px solid var(--accent-yellow); }
+  .s5 .step-circle { background: rgba(240, 136, 62, 0.2); color: var(--accent-orange); border: 2px solid var(--accent-orange); }
+  .s6 .step-circle { background: rgba(255, 123, 114, 0.2); color: var(--accent-red); border: 2px solid var(--accent-red); }
+  .s7 .step-circle { background: rgba(57, 211, 83, 0.2); color: var(--accent-teal); border: 2px solid var(--accent-teal); }
+  .s8 .step-circle { background: rgba(88, 166, 255, 0.2); color: var(--accent-blue); border: 2px solid var(--accent-blue); }
+
+  /* ===== FILE CARDS ===== */
+  .file-tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+  .file-tab {
+    padding: 8px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .file-tab.active { background: var(--bg-code); color: var(--accent-blue); border-color: rgba(88,166,255,0.3); }
+  .file-tab:hover:not(.active) { color: var(--text-secondary); }
+
+  .file-panel { display: none; }
+  .file-panel.active { display: block; }
+
+  .code-container {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 0 8px 8px 8px;
+    overflow: hidden;
+  }
+
+  .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--border);
+  }
+  .code-header-left { display: flex; align-items: center; gap: 10px; }
+  .code-lang {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(88, 166, 255, 0.1);
+    color: var(--accent-blue);
+    font-weight: 500;
+  }
+  .code-filename {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .copy-btn {
+    font-size: 11px;
+    padding: 4px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { color: var(--text-primary); border-color: var(--text-secondary); }
+
+  pre {
+    padding: 20px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.65;
+    counter-reset: lines;
+  }
+  pre::-webkit-scrollbar { height: 6px; }
+  pre::-webkit-scrollbar-track { background: transparent; }
+  pre::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ===== SYNTAX HIGHLIGHT ===== */
+  .kw { color: #ff7b72; }           /* keyword */
+  .kw2 { color: #bc8cff; }          /* def/class */
+  .fn { color: #79c0ff; }           /* function name */
+  .str { color: #a5d6ff; }          /* string */
+  .cm { color: #6e7681; font-style: italic; } /* comment */
+  .num { color: #79c0ff; }          /* number */
+  .dec { color: #bc8cff; }          /* decorator */
+  .tp { color: #ffa657; }           /* type */
+  .op { color: #ff7b72; }           /* operator */
+  .dstr { color: #a5d6ff; font-style: italic; } /* docstring */
+
+  /* ===== INFO CARDS ===== */
+  .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 16px; }
+  .info-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    transition: border-color 0.2s;
+  }
+  .info-card:hover { border-color: rgba(88, 166, 255, 0.3); }
+  .info-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .info-card-icon { font-size: 20px; }
+  .info-card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .info-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+  .info-card code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--bg-code);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--accent-blue);
+  }
+
+  /* ===== FUNCTION TABLE ===== */
+  .func-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  .func-table th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+  .func-table td {
+    padding: 11px 14px;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(48, 54, 61, 0.6);
+    vertical-align: top;
+    color: var(--text-secondary);
+  }
+  .func-table tr:last-child td { border-bottom: none; }
+  .func-table tr:hover td { background: rgba(88, 166, 255, 0.03); }
+  .func-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent-blue);
+    white-space: nowrap;
+  }
+  .func-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 7px;
+    border-radius: 3px;
+    font-weight: 600;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+  .tag-core { background: rgba(255,123,114,0.15); color: var(--accent-red); }
+  .tag-util { background: rgba(88,166,255,0.12); color: var(--accent-blue); }
+  .tag-output { background: rgba(63,185,80,0.15); color: var(--accent-green); }
+  .tag-metric { background: rgba(210,153,34,0.15); color: var(--accent-yellow); }
+
+  .table-wrapper {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 12px;
+  }
+
+  /* ===== CHANNEL DIAGRAM ===== */
+  .channel-diagram {
+    display: flex;
+    gap: 12px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+  }
+  .channel-card {
+    flex: 1;
+    min-width: 160px;
+    border-radius: 10px;
+    padding: 16px 18px;
+    border: 1px solid;
+  }
+  .ch-a { background: rgba(255,123,114,0.08); border-color: rgba(255,123,114,0.3); }
+  .ch-b { background: rgba(63,185,80,0.08); border-color: rgba(63,185,80,0.3); }
+  .ch-c { background: rgba(210,153,34,0.1); border-color: rgba(210,153,34,0.35); }
+  .ch-e { background: rgba(88,166,255,0.08); border-color: rgba(88,166,255,0.3); }
+  .ch-label { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+  .ch-a .ch-label { color: var(--accent-red); }
+  .ch-b .ch-label { color: var(--accent-green); }
+  .ch-c .ch-label { color: var(--accent-yellow); }
+  .ch-e .ch-label { color: var(--accent-blue); }
+  .ch-name { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+  .ch-desc { font-size: 12px; color: var(--text-secondary); }
+  .ch-weight {
+    margin-top: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .ch-weight strong { color: var(--text-primary); }
+
+  /* ===== ALERT BOXES ===== */
+  .alert {
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-left: 3px solid;
+    font-size: 13px;
+  }
+  .alert-warn { background: rgba(210,153,34,0.08); border-color: var(--accent-yellow); color: var(--text-secondary); }
+  .alert-info { background: rgba(88,166,255,0.08); border-color: var(--accent-blue); color: var(--text-secondary); }
+  .alert-tip { background: rgba(63,185,80,0.08); border-color: var(--accent-green); color: var(--text-secondary); }
+  .alert strong { color: var(--text-primary); }
+
+  /* ===== QUICKSTART ===== */
+  .cmd-block {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 10px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--accent-green);
+  }
+  .cmd-comment { color: var(--text-muted); }
+  .cmd-prompt { color: var(--text-muted); user-select: none; }
+
+  /* ===== ARCH DIAGRAM ===== */
+  .arch-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .arch-box .arch-title { color: var(--accent-blue); font-weight: 700; }
+  .arch-box .arch-teacher { color: var(--accent-orange); }
+  .arch-box .arch-student { color: var(--accent-purple); }
+  .arch-box .arch-arrow { color: var(--accent-green); }
+  .arch-box .arch-layer { color: var(--accent-yellow); }
+
+  /* ===== DESIGN LOG ===== */
+  .dd-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .dd-item {
+    display: flex;
+    gap: 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    align-items: flex-start;
+  }
+  .dd-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: rgba(88,166,255,0.1);
+    color: var(--accent-blue);
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+  .dd-content { flex: 1; }
+  .dd-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+  .dd-reason { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+  .dd-file {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    margin-top: 60px;
+    padding: 24px 40px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Scrollbar main */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 768px) {
+    #sidebar { transform: translateX(-100%); }
+    #main { margin-left: 0; }
+    .content-area { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <h1>🧬 Dự Án NST</h1>
+    <div class="version">Phân tích hình thái Nhiễm Sắc Thể · v1.0</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Tổng Quan</div>
+    <a class="nav-item active" href="#overview" onclick="setActive(this)">
+      <span class="icon">🏠</span> Giới Thiệu Dự Án
+    </a>
+    <a class="nav-item" href="#techstack" onclick="setActive(this)">
+      <span class="icon">⚙️</span> Tech Stack
+    </a>
+    <a class="nav-item" href="#pipeline" onclick="setActive(this)">
+      <span class="icon">🔄</span> Pipeline Tổng Thể
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Các Module Code</div>
+    <a class="nav-item" href="#module1" onclick="setActive(this)">
+      <span class="icon">📁</span> Bước 1 · Tạo Thư Mục
+      <span class="badge">39 dòng</span>
+    </a>
+    <a class="nav-item" href="#module2" onclick="setActive(this)">
+      <span class="icon">✂️</span> Bước 2 · Tách NST Đơn
+      <span class="badge">~290 dòng</span>
+    </a>
+    <a class="nav-item" href="#module3" onclick="setActive(this)">
+      <span class="icon">🧪</span> Bước 3 · Sinh Data Tổng Hợp
+      <span class="badge">~450 dòng</span>
+    </a>
+    <a class="nav-item" href="#module4" onclick="setActive(this)">
+      <span class="icon">🔲</span> Bước 4 · Chuẩn Hóa 256×256
+      <span class="badge">~150 dòng</span>
+    </a>
+    <a class="nav-item" href="#module5" onclick="setActive(this)">
+      <span class="icon">✂️</span> Bước 5 · Chia Train/Val/Test
+      <span class="badge">~100 dòng</span>
+    </a>
+    <a class="nav-item" href="#module6" onclick="setActive(this)">
+      <span class="icon">🤖</span> Bước 6 · Train AI Model
+      <span class="badge">~1340 dòng</span>
+    </a>
+    <a class="nav-item" href="#module7" onclick="setActive(this)">
+      <span class="icon">🎯</span> Bước 7 · Predict & Tách A/B
+      <span class="badge">~500 dòng</span>
+    </a>
+    <a class="nav-item" href="#module8" onclick="setActive(this)">
+      <span class="icon">📊</span> Bước 8 · Đánh Giá Model
+      <span class="badge">~420 dòng</span>
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Tài Liệu Kỹ Thuật</div>
+    <a class="nav-item" href="#architecture" onclick="setActive(this)">
+      <span class="icon">🏗️</span> Kiến Trúc Mô Hình AI
+    </a>
+    <a class="nav-item" href="#functions" onclick="setActive(this)">
+      <span class="icon">🔍</span> Bảng Tra Cứu Hàm
+    </a>
+    <a class="nav-item" href="#decisions" onclick="setActive(this)">
+      <span class="icon">📝</span> Nhật Ký Thiết Kế
+    </a>
+    <a class="nav-item" href="#quickstart" onclick="setActive(this)">
+      <span class="icon">🚀</span> Hướng Dẫn Chạy
+    </a>
+  </div>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-breadcrumb">
+      🧬 dự_án_NTS &rsaquo; <span>Tài liệu dự án đầy đủ</span>
+    </div>
+    <div class="topbar-tags">
+      <span class="tag tag-python">Python 3.9+</span>
+      <span class="tag tag-tf">TensorFlow 2.12+</span>
+      <span class="tag tag-cv">OpenCV 4.x</span>
+    </div>
+  </div>
+
+  <div class="content-area">
+
+    <!-- ===== HERO ===== -->
+    <div class="hero" id="overview">
+      <h1>🧬 Phân Tích Hình Thái Nhiễm Sắc Thể (NST)</h1>
+      <p>Hệ thống AI tự động phân vùng và tách hai nhiễm sắc thể chồng nhau trong ảnh karyotype.
+         Nhận diện 3 trạng thái: <strong>NST A</strong> (tách), <strong>NST B</strong> (tách), và <strong>vùng C</strong> (chồng lấp).
+         Sử dụng kiến trúc <strong>Hybrid Attention U-Net</strong> theo mô hình <strong>Teacher-Student</strong>.</p>
+      <div class="hero-badges">
+        <span class="hero-badge">🎯 Segmentation</span>
+        <span class="hero-badge">🧠 Teacher-Student Distillation</span>
+        <span class="hero-badge">👁️ Attention U-Net</span>
+        <span class="hero-badge">🔬 Synthetic Data Generation</span>
+        <span class="hero-badge">🎨 OpenCV Inpainting</span>
+        <span class="hero-badge">📐 256×256 Input</span>
+      </div>
+    </div>
+
+    <!-- ===== SECTION 1: TECH STACK ===== -->
+    <section class="section" id="techstack">
+      <div class="section-header">
+        <div class="section-num">⚙</div>
+        <div class="section-title">Tech Stack &amp; Dependencies</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-card-header">
+            <span class="info-card-icon">🐍</span>
+            <span class="info-card-title">Python 3.9+</span>
+          </div>
+          <p>Ngôn ngữ chính. Dùng <code>pathlib</code>, <code>dataclasses</code>, <code>argparse</code>, <code>json</code>, <code>csv</code>.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header">
+            <span class="info-card-icon">🧠</span>
+            <span class="info-card-title">TensorFlow / Keras 2.12+</span>
+          </div>
+          <p>Xây dựng, train, và inference mô hình AI. Dùng <code>tf.data</code>, <code>keras.callbacks</code>, AMP mixed precision.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header">
+            <span class="info-card-icon">👁️</span>
+            <span class="info-card-title">OpenCV (cv2) 4.x</span>
+          </div>
+          <p>Xử lý ảnh cổ điển: <code>connectedComponents</code>, <code>morphologyEx</code>, <code>inpaint</code>, <code>findContours</code>.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header">
+            <span class="info-card-icon">🖼️</span>
+            <span class="info-card-title">Pillow (PIL)</span>
+          </div>
+          <p>Đọc/ghi ảnh, composite alpha, resize. Dùng trong pipeline sinh data tổng hợp và inference.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header">
+            <span class="info-card-icon">🔢</span>
+            <span class="info-card-title">NumPy</span>
+          </div>
+          <p>Xử lý mảng số học. Tính toán metrics (Dice, IoU, Pixel Accuracy) chính xác hơn Keras metrics.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header">
+            <span class="info-card-icon">📊</span>
+            <span class="info-card-title">Matplotlib</span>
+          </div>
+          <p>Sinh ảnh visualization grid 2×4 so sánh Ground Truth vs Prediction trong file <code>8v1</code>.</p>
+        </div>
+      </div>
+      <div class="alert alert-warn" style="margin-top:20px">
+        <strong>⚠️ Lưu ý môi trường:</strong> Dự án tắt XLA auto-jit (<code>TF_XLA_FLAGS=--tf_xla_auto_jit=0</code>)
+        và AUTOGRAPH verbose để tránh epoch đầu bị treo trên GPU T4 Colab. Không thay đổi biến môi trường này trừ khi debug sâu.
+      </div>
+    </section>
+
+    <!-- ===== SECTION 2: PIPELINE ===== -->
+    <section class="section" id="pipeline">
+      <div class="section-header">
+        <div class="section-num">🔄</div>
+        <div class="section-title">Pipeline Tổng Thể — Từ Đầu Đến Cuối</div>
+      </div>
+      <p style="color:var(--text-secondary);margin-bottom:20px;font-size:14px">
+        8 bước chạy tuần tự. Mỗi bước nhận output của bước trước làm input.
+        Bước 6 là trái tim của toàn bộ hệ thống.
+      </p>
+      <div class="pipeline">
+        <div class="pipeline-step s1">
+          <div class="pipeline-left">
+            <div class="step-circle">1</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-card">
+            <div class="step-card-header">
+              <span class="step-card-title">Khởi Tạo Thư Mục</span>
+              <span class="step-card-file">1v1_create_folder.py</span>
+            </div>
+            <p>Tạo toàn bộ cây thư mục cần thiết. Chạy MỘT LẦN DUY NHẤT khi setup dự án mới.</p>
+            <div class="step-io">
+              <div class="step-io-item"><div class="dot" style="background:#58a6ff"></div>Output: source_data/, generated_data/, dataset/, results/</div>
+            </div>
+          </div>
+        </div>
+        <div class="pipeline-step s2">
+          <div class="pipeline-left">
+            <div class="step-circle">2</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-card">
+            <div class="step-card-header">
+              <span class="step-card-title">Tách NST Đơn Lẻ Khỏi Nền</span>
+              <span class="step-card-file">2v1_prepare_single_chromosomes.py</span>
+            </div>
+            <p>Nhận ảnh NST đơn trên nền trắng → tách nền bằng border-connected detection → xuất RGBA + mask nhị phân.</p>
+            <div class="step-io">
+              <div class="step-io-item"><div class="dot" style="background:#ff7b72"></div>Input: source_data/single_chromosomes/*.png</div>
+              <div class="step-io-item"><div class="dot" style="background:#3fb950"></div>Output: prepared_single_chromosomes/images_rgba/ + masks/</div>
+            </div>
+          </div>
+        </div>
+        <div class="pipeline-step s3">
+          <div class="pipeline-left">
+            <div class="step-circle">3</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-card">
+            <div class="step-card-header">
+              <span class="step-card-title">Sinh Dữ Liệu Tổng Hợp (Synthetic)</span>
+              <span class="step-card-file">3v1_generate_synthetic_masks.py</span>
+            </div>
+            <p>Ghép 2 NST đơn thành ảnh chồng nhau có kiểm soát. Mask C = A ∩ B chính xác 100%. Sinh 3000 mẫu.</p>
+            <div class="step-io">
+              <div class="step-io-item"><div class="dot" style="background:#ff7b72"></div>Input: prepared_single_chromosomes/images_rgba/</div>
+              <div class="step-io-item"><div class="dot" style="background:#3fb950"></div>Output: generated_data/ (images + masks_A/B/C)</div>
+            </div>
+          </div>
+        </div>
+        <div class="pipeline-step s4">
+          <div class="pipeline-left">
+            <div class="step-circle">4</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-card">
+            <div class="step-card-header">
+              <span class="step-card-title">Chuẩn Hóa Về 256×256 Grayscale</span>
+              <span class="step-card-file">4v1_preprocess_to_256.py</span>
+            </div>
+            <p>Resize giữ tỉ lệ + padding trắng → 256×256. Binarize mask. Mô hình AI yêu cầu kích thước cố định.</p>
+            <div class="step-io">
+              <div class="step-io-item"><div class="dot" style="background:#ff7b72"></div>Input: generated_data/</div>
+              <div class="step-io-item"><div class="dot" style="background:#3fb950"></div>Output: processed_data_256/</div>
+            </div>
+          </div>
+        </div>
+        <div class="pipeline-step s5">
+          <div class="pipeline-left">
+            <div class="step-circle">5</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-card">
+            <div class="step-card-header">
+              <span class="step-card-title">Chia Tập Train / Val / Test</span>
+              <span class="step-card-file">5v1_split_data.py</span>
+            </div>
+            <p>Shuffle ngẫu nhiên (seed=42) rồi chia 70% / 15% / 15%. Đảm bảo reproducible mỗi lần chạy.</p>
+            <div class="step-io">
+              <div class="step-io-item"><div class="dot" style="background:#ff7b72"></div>Input: processed_data_256/</div>
+              <div class="step-io-item"><div class="dot" style="background:#3fb950"></div>Output: dataset/train/ | val/ | test/</div>
+            </div>
+          </div>
+        </div>
+        <div class="pipeline-step s6">
+          <div class="pipeline-left">
+            <div class="step-circle">6</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-card" style="border-color:rgba(255,123,114,0.3)">
+            <div class="step-card-header">
+              <span class="step-card-title" style="color:var(--accent-red)">⭐ Huấn Luyện Mô Hình AI (Bước Trung Tâm)</span>
+              <span class="step-card-file">6v1_unet_model.py</span>
+            </div>
+            <p>Train Teacher (48 filters) → freeze → distill sang Student (24 filters). Tự resume từ checkpoint. Xuất best_for_apply.keras.</p>
+            <div class="step-io">
+              <div class="step-io-item"><div class="dot" style="background:#ff7b72"></div>Input: dataset/ (train/val/test)</div>
+              <div class="step-io-item"><div class="dot" style="background:#3fb950"></div>Output: results/best_for_apply.keras + metrics JSON/CSV</div>
+            </div>
+          </div>
+        </div>
+        <div class="pipeline-step s7">
+          <div class="pipeline-left">
+            <div class="step-circle">7</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-card">
+            <div class="step-card-header">
+              <span class="step-card-title">Predict &amp; Tách A/B từ Ảnh Thật</span>
+              <span class="step-card-file">7v1_predict_real_overlap.py</span>
+            </div>
+            <p>Load model → predict mask A/B/C → restore về kích thước gốc → inpainting vùng C → xuất file A.png và B.png.</p>
+            <div class="step-io">
+              <div class="step-io-item"><div class="dot" style="background:#ff7b72"></div>Input: source_data/overlap_raw/ + best_for_apply.keras</div>
+              <div class="step-io-item"><div class="dot" style="background:#3fb950"></div>Output: results/real_predictions/separated_chromosomes/</div>
+            </div>
+          </div>
+        </div>
+        <div class="pipeline-step s8">
+          <div class="pipeline-left">
+            <div class="step-circle">8</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-card">
+            <div class="step-card-header">
+              <span class="step-card-title">Đánh Giá Định Lượng (Tùy Chọn)</span>
+              <span class="step-card-file">8v1_evaluate_synthetic_test.py</span>
+            </div>
+            <p>Chạy predict trên dataset/test có ground-truth. Tính Dice, IoU, Pixel Acc. Sinh visualization grid so sánh GT vs Pred.</p>
+            <div class="step-io">
+              <div class="step-io-item"><div class="dot" style="background:#ff7b72"></div>Input: dataset/test/ + *.keras</div>
+              <div class="step-io-item"><div class="dot" style="background:#3fb950"></div>Output: results/synthetic_test_eval/ (metrics.json + CSV + viz)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== MODULES CODE ===== -->
+
+    <!-- MODULE 1 -->
+    <section class="section" id="module1">
+      <div class="section-header">
+        <div class="section-num">1</div>
+        <div class="section-title">1v1_create_folder.py — Khởi Tạo Thư Mục</div>
+      </div>
+      <div class="alert alert-info">
+        <strong>Mục đích:</strong> Tạo toàn bộ cây thư mục. Không có logic phức tạp. Chạy một lần duy nhất khi bắt đầu dự án mới.
+      </div>
+      <div class="code-container">
+        <div class="code-header">
+          <div class="code-header-left">
+            <span class="code-lang">Python</span>
+            <span class="code-filename">1v1_create_folder.py</span>
+          </div>
+          <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
+        </div>
+        <pre><span class="cm"># ============================================================
+# FILE: 1v1_create_folder.py
+# CHỨC NĂNG: Tạo toàn bộ cây thư mục cho dự án (chạy 1 lần)
+# ============================================================</span>
+
+<span class="kw">from</span> pathlib <span class="kw">import</span> Path
+
+ROOT = Path(__file__).resolve().parent
+
+<span class="cm"># Danh sách TẤT CẢ thư mục cần thiết trong project</span>
+folders = [
+    <span class="cm"># --- Dữ liệu đầu vào ---</span>
+    <span class="str">"source_data/overlap_raw"</span>,         <span class="cm"># Ảnh NST thật cần phân tích</span>
+    <span class="str">"source_data/single_chromosomes"</span>,   <span class="cm"># Ảnh NST đơn lẻ (đã tách thủ công)</span>
+
+    <span class="cm"># --- Dữ liệu tổng hợp (sinh bởi bước 3) ---</span>
+    <span class="str">"generated_data/images"</span>,
+    <span class="str">"generated_data/masks_A"</span>,
+    <span class="str">"generated_data/masks_B"</span>,
+    <span class="str">"generated_data/masks_C"</span>,
+    <span class="str">"generated_data/previews"</span>,
+
+    <span class="cm"># --- Dataset chia train/val/test ---</span>
+    <span class="str">"dataset/train/images"</span>, <span class="str">"dataset/train/masks_A"</span>,
+    <span class="str">"dataset/train/masks_B"</span>, <span class="str">"dataset/train/masks_C"</span>,
+
+    <span class="str">"dataset/val/images"</span>,   <span class="str">"dataset/val/masks_A"</span>,
+    <span class="str">"dataset/val/masks_B"</span>,   <span class="str">"dataset/val/masks_C"</span>,
+
+    <span class="str">"dataset/test/images"</span>,  <span class="str">"dataset/test/masks_A"</span>,
+    <span class="str">"dataset/test/masks_B"</span>,  <span class="str">"dataset/test/masks_C"</span>,
+
+    <span class="cm"># --- Kết quả ---</span>
+    <span class="str">"results/logs"</span>,
+    <span class="str">"results/predicted_masks"</span>,
+    <span class="str">"results/predicted_contours"</span>,
+    <span class="str">"results/metric_reports"</span>,
+]
+
+<span class="kw">for</span> folder <span class="kw">in</span> folders:
+    (ROOT / folder).mkdir(parents=<span class="kw">True</span>, exist_ok=<span class="kw">True</span>)
+
+<span class="fn">print</span>(<span class="str">"✅ Done creating project folders."</span>)</pre>
+      </div>
+    </section>
+
+    <!-- MODULE 2 -->
+    <section class="section" id="module2">
+      <div class="section-header">
+        <div class="section-num">2</div>
+        <div class="section-title">2v1_prepare_single_chromosomes.py — Tách NST Đơn</div>
+      </div>
+      <div class="alert alert-info">
+        <strong>Mục đích:</strong> Tách nhiễm sắc thể ra khỏi nền trắng trong ảnh đơn lẻ, tạo ra ảnh RGBA (nền trong suốt) và mask nhị phân.
+        Đây là nguồn nguyên liệu cho bước sinh data tổng hợp ở bước 3.
+      </div>
+      <div class="table-wrapper">
+        <table class="func-table">
+          <thead><tr>
+            <th>Hàm</th><th>Loại</th><th>Mô tả</th><th>Input → Output</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="func-name">get_border_background(gray)</span><span class="func-tag tag-core">LÕI</span></td>
+              <td style="color:var(--accent-blue)">Thuật toán</td>
+              <td>Tìm nền thật = vùng sáng TIẾP XÚC với biên ảnh. Tránh nhầm vùng trắng bên trong NST.</td>
+              <td style="font-family:monospace;font-size:11px">gray → (bg_mask, threshold, bg_ref)</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">extract_object_rgba(img_path)</span><span class="func-tag tag-core">LÕI</span></td>
+              <td style="color:var(--accent-blue)">Pipeline</td>
+              <td>Đọc ảnh → tách nền → morphology → keep largest → erode → crop → RGBA. Hàm trung tâm của file.</td>
+              <td style="font-family:monospace;font-size:11px">path → (RGBA, mask, info)</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">keep_largest_component(mask)</span><span class="func-tag tag-util">HỖ TRỢ</span></td>
+              <td style="color:var(--accent-purple)">Tiện ích</td>
+              <td>Dùng connectedComponents, giữ lại label có diện tích lớn nhất. Loại bỏ noise nhỏ.</td>
+              <td style="font-family:monospace;font-size:11px">bool array → bool array</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">make_preview(rgba_img, mask_img)</span><span class="func-tag tag-util">HỖ TRỢ</span></td>
+              <td style="color:var(--accent-purple)">Visualization</td>
+              <td>Tạo ảnh nền xám + viền đỏ để kiểm tra kết quả bằng mắt thường.</td>
+              <td style="font-family:monospace;font-size:11px">RGBA, Mask → RGB preview</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="code-container" style="margin-top:12px">
+        <div class="code-header">
+          <div class="code-header-left">
+            <span class="code-lang">Python</span>
+            <span class="code-filename">2v1_prepare_single_chromosomes.py — Hàm cốt lõi</span>
+          </div>
+        </div>
+        <pre><span class="kw2">def</span> <span class="fn">get_border_background</span>(gray):
+    <span class="dstr">"""
+    [HÀM LÕI] Phát hiện nền bằng phân tích vùng biên.
+    
+    Ý tưởng then chốt: Nền thật = vùng SÁNG + TIẾP XÚC với biên ảnh.
+    Vùng trắng bên trong NST → không chạm biên → không bị xóa.
+    
+    Thuật toán:
+        1. Lấy pixel ở 4 cạnh ảnh → tính median → màu nền tham chiếu.
+        2. Tìm tất cả pixel sáng hơn ngưỡng (candidate background).
+        3. Dùng connectedComponents → giữ chỉ những component
+           có pixel CHẠM biên ảnh = nền thật.
+    """</span>
+    h, w = gray.shape
+
+    <span class="cm"># Lấy pixel biên để ước lượng màu nền</span>
+    border_pixels = np.concatenate([
+        gray[<span class="num">0</span>, :], gray[h-<span class="num">1</span>, :],   <span class="cm"># cạnh trên + dưới</span>
+        gray[:, <span class="num">0</span>], gray[:, w-<span class="num">1</span>]    <span class="cm"># cạnh trái + phải</span>
+    ])
+    bg_ref = np.median(border_pixels)
+    threshold = max(<span class="num">210</span>, bg_ref - BG_MARGIN)
+
+    <span class="cm"># Pixel sáng hơn ngưỡng = candidate background</span>
+    candidate_bg = gray >= threshold
+
+    <span class="cm"># Tìm component nào chạm biên = nền thật</span>
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
+        candidate_bg.astype(np.uint8), connectivity=<span class="num">8</span>
+    )
+    border_labels = set(np.unique(np.concatenate([
+        labels[<span class="num">0</span>, :], labels[h-<span class="num">1</span>, :],
+        labels[:, <span class="num">0</span>], labels[:, w-<span class="num">1</span>]
+    ])))
+    border_labels.discard(<span class="num">0</span>)  <span class="cm"># bỏ label 0 (không phải candidate)</span>
+
+    background = np.isin(labels, list(border_labels)) &amp; candidate_bg
+    <span class="kw">return</span> background, threshold, bg_ref
+
+
+<span class="kw2">def</span> <span class="fn">extract_object_rgba</span>(img_path):
+    <span class="dstr">"""
+    [HÀM CHÍNH] Tách NST khỏi nền → RGBA với nền trong suốt.
+    
+    Quy trình:
+        1. Đọc ảnh → grayscale.
+        2. get_border_background() → xác định nền.
+        3. Morphology open + close → làm sạch mask.
+        4. keep_largest_component() → bỏ noise.
+        5. Erode 1px → giảm halo trắng ở viền.
+        6. Crop sát + padding nhỏ.
+        7. Tạo RGBA: pixel NST giữ nguyên, pixel nền → alpha=0.
+    """</span>
+    img = Image.open(img_path).convert(<span class="str">"RGB"</span>)
+    arr = np.array(img)
+    gray = np.array(img.convert(<span class="str">"L"</span>))
+
+    background, threshold, bg_ref = get_border_background(gray)
+    object_mask = ~background   <span class="cm"># NST = KHÔNG phải nền</span>
+
+    <span class="cm"># Làm sạch mask</span>
+    kernel = np.ones((KERNEL_SIZE, KERNEL_SIZE), np.uint8)
+    object_mask = cv2.morphologyEx(object_mask.astype(np.uint8)*<span class="num">255</span>,
+                                   cv2.MORPH_OPEN, kernel)
+    object_mask = cv2.morphologyEx(object_mask, cv2.MORPH_CLOSE, kernel) > <span class="num">0</span>
+    object_mask = keep_largest_component(object_mask)
+
+    <span class="cm"># Co mask nhẹ để giảm viền trắng giả</span>
+    <span class="kw">if</span> MASK_SHRINK_ITER > <span class="num">0</span>:
+        object_mask = cv2.erode(object_mask.astype(np.uint8)*<span class="num">255</span>,
+                               kernel, iterations=MASK_SHRINK_ITER) > <span class="num">0</span>
+
+    <span class="cm"># Crop sát object</span>
+    ys, xs = np.where(object_mask)
+    x1, x2 = xs.min()-CROP_PADDING, xs.max()+CROP_PADDING
+    y1, y2 = ys.min()-CROP_PADDING, ys.max()+CROP_PADDING
+    <span class="cm"># ... (clip về kích thước ảnh, tạo RGBA)</span>
+    <span class="kw">return</span> rgba_img, mask_img, info</pre>
+      </div>
+    </section>
+
+    <!-- MODULE 3 -->
+    <section class="section" id="module3">
+      <div class="section-header">
+        <div class="section-num">3</div>
+        <div class="section-title">3v1_generate_synthetic_masks.py — Sinh Data Tổng Hợp</div>
+      </div>
+      <div class="alert alert-tip">
+        <strong>💡 Tại sao cần Synthetic Data?</strong> Ảnh NST thật (overlap_raw) KHÔNG có ground-truth mask.
+        Bằng cách tự ghép 2 NST đơn, ta biết chính xác vị trí từng NST → mask A, B, C chính xác 100%.
+      </div>
+      <div class="table-wrapper">
+        <table class="func-table">
+          <thead><tr><th>Hàm</th><th>Loại</th><th>Mô tả</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="func-name">make_realistic_overlap_canvas()</span><span class="func-tag tag-core">LÕI</span></td>
+              <td>Generator</td>
+              <td>Ghép 2 NST theo tư thế thực tế: A nằm ngang (~90°), B đứng (~0°). Tâm gần nhau để phần giữa lồng nhau. C = A ∩ B pixel.</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">extract_chromosome_object()</span><span class="func-tag tag-core">LÕI</span></td>
+              <td>Preprocessing</td>
+              <td>Tách NST khỏi nền. Ưu tiên alpha channel có sẵn, fallback sang corner-median background estimation.</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">resize_keep_ratio(img, mask, target)</span><span class="func-tag tag-util">HỖ TRỢ</span></td>
+              <td>Transform</td>
+              <td>Scale đồng đều giữ tỉ lệ. Ảnh: BILINEAR. Mask: NEAREST (tránh blur nhãn).</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">rotate_pair(img, mask, angle)</span><span class="func-tag tag-util">HỖ TRỢ</span></td>
+              <td>Transform</td>
+              <td>Xoay cả ảnh và mask cùng góc. Fill bằng transparent / 0 (đen).</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">paste_object(canvas, mask, obj, ...)</span><span class="func-tag tag-util">HỖ TRỢ</span></td>
+              <td>Compositing</td>
+              <td>Dán NST vào canvas bằng alpha_composite. Cập nhật mask riêng cho A hoặc B.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="code-container" style="margin-top:12px">
+        <div class="code-header">
+          <div class="code-header-left">
+            <span class="code-lang">Python</span>
+            <span class="code-filename">3v1 — Hàm sinh canvas chồng nhau (make_realistic_overlap_canvas)</span>
+          </div>
+        </div>
+        <pre><span class="kw2">def</span> <span class="fn">make_realistic_overlap_canvas</span>(obj_A, mask_A, obj_B, mask_B):
+    <span class="dstr">"""
+    [HÀM LÕI] Tạo 1 cặp ảnh NST chồng nhau có kiểm soát.
+    
+    Chiến lược:
+        - A xoay ~90° ± 8° → nằm ngang
+        - B xoay ~0° ± 8° → đứng
+        - Tâm 2 NST đặt gần trung tâm canvas, lệch nhau ±10-18px
+        
+    Từ chối mẫu nếu:
+        - Overlap < 120px (chồng quá ít, không đại diện)
+        - Overlap > 55% diện tích NST nhỏ hơn (chồng quá nhiều)
+    
+    C = A ∩ B  (giao nhị phân pixel-by-pixel)
+    """</span>
+    <span class="cm"># 1. Resize ngẫu nhiên</span>
+    target_A = random.randint(TARGET_LONG_SIDE_MIN, TARGET_LONG_SIDE_MAX)
+    target_B = random.randint(TARGET_LONG_SIDE_MIN, TARGET_LONG_SIDE_MAX)
+    obj_A, mask_A = resize_keep_ratio(obj_A, mask_A, target_A)
+    obj_B, mask_B = resize_keep_ratio(obj_B, mask_B, target_B)
+
+    <span class="cm"># 2. Xoay: A nằm ngang, B đứng</span>
+    angle_A = <span class="num">90</span> + random.uniform(<span class="num">-8</span>, <span class="num">8</span>)
+    angle_B = random.uniform(<span class="num">-8</span>, <span class="num">8</span>)
+    obj_A, mask_A = rotate_pair(obj_A, mask_A, angle_A)
+    obj_B, mask_B = rotate_pair(obj_B, mask_B, angle_B)
+
+    <span class="cm"># 3. Canvas trắng, tâm gần nhau</span>
+    canvas = Image.new(<span class="str">"RGBA"</span>, (CANVAS_SIZE, CANVAS_SIZE), (<span class="num">255</span>,<span class="num">255</span>,<span class="num">255</span>,<span class="num">255</span>))
+    center_x = CANVAS_SIZE//<span class="num">2</span> + random.randint(<span class="num">-15</span>, <span class="num">15</span>)
+    center_y = CANVAS_SIZE//<span class="num">2</span> + random.randint(<span class="num">-15</span>, <span class="num">15</span>)
+    A_cx = center_x + random.randint(<span class="num">-18</span>, <span class="num">18</span>)
+    B_cy = center_y + random.randint(<span class="num">-18</span>, <span class="num">18</span>)
+
+    <span class="cm"># 4. Dán ngẫu nhiên thứ tự (A trước B hoặc B trước A)</span>
+    <span class="kw">if</span> random.random() < <span class="num">0.5</span>:
+        canvas, mask_A_canvas = paste_object(canvas, mask_A_canvas, obj_A, mask_A, A_cx, A_cy)
+        canvas, mask_B_canvas = paste_object(canvas, mask_B_canvas, obj_B, mask_B, B_cx, B_cy)
+    <span class="kw">else</span>:
+        canvas, mask_B_canvas = paste_object(canvas, mask_B_canvas, obj_B, mask_B, B_cx, B_cy)
+        canvas, mask_A_canvas = paste_object(canvas, mask_A_canvas, obj_A, mask_A, A_cx, A_cy)
+
+    <span class="cm"># 5. C = giao nhị phân pixel</span>
+    A_arr = np.array(mask_A_canvas) > <span class="num">0</span>
+    B_arr = np.array(mask_B_canvas) > <span class="num">0</span>
+    C_arr = A_arr &amp; B_arr   <span class="cm"># ← C chính xác 100%!</span>
+
+    <span class="cm"># 6. Kiểm soát chất lượng overlap</span>
+    overlap_pixels = int(C_arr.sum())
+    overlap_ratio = overlap_pixels / min(A_arr.sum(), B_arr.sum())
+    <span class="kw">if</span> overlap_pixels < MIN_OVERLAP_PIXELS: <span class="kw">return</span> <span class="kw">None</span>
+    <span class="kw">if</span> overlap_ratio > MAX_OVERLAP_RATIO:   <span class="kw">return</span> <span class="kw">None</span>
+
+    <span class="kw">return</span> final_image, mask_A_canvas, mask_B_canvas, mask_C_canvas</pre>
+      </div>
+    </section>
+
+    <!-- MODULE 4 & 5 compact -->
+    <section class="section" id="module4">
+      <div class="section-header">
+        <div class="section-num">4</div>
+        <div class="section-title">4v1_preprocess_to_256.py — Chuẩn Hóa Ảnh</div>
+      </div>
+      <div class="alert alert-warn">
+        <strong>Tại sao dùng PADDING thay vì STRETCH?</strong> Stretch làm méo hình thái NST.
+        Hình dạng NST là đặc trưng quan trọng trong karyotype, không được biến dạng.
+      </div>
+      <div class="code-container">
+        <div class="code-header">
+          <div class="code-header-left">
+            <span class="code-lang">Python</span>
+            <span class="code-filename">4v1 — resize_with_padding + binarize_mask</span>
+          </div>
+        </div>
+        <pre><span class="kw2">def</span> <span class="fn">resize_with_padding</span>(img, target_size=<span class="num">256</span>, is_mask=<span class="kw">False</span>):
+    <span class="dstr">"""
+    Resize giữ tỉ lệ → paste vào tâm canvas target×target.
+    
+    Ảnh (is_mask=False):  Resize BILINEAR + padding TRẮNG (255)
+    Mask (is_mask=True):  Resize NEAREST + padding ĐEN (0)
+    
+    Lý do padding khác nhau:
+        - Ảnh: nền trắng khớp với nền tự nhiên của NST karyotype.
+        - Mask: vùng padding không có NST → phải là 0 (nền).
+    """</span>
+    w, h = img.size
+    scale = min(target_size/w, target_size/h)  <span class="cm"># scale nhỏ nhất để vừa</span>
+    new_w, new_h = int(round(w*scale)), int(round(h*scale))
+
+    resample = Image.NEAREST <span class="kw">if</span> is_mask <span class="kw">else</span> Image.BILINEAR
+    fill = <span class="num">0</span> <span class="kw">if</span> is_mask <span class="kw">else</span> <span class="num">255</span>
+    img = img.resize((new_w, new_h), resample)
+    canvas = Image.new(<span class="str">"L"</span>, (target_size, target_size), fill)
+
+    <span class="cm"># Paste vào TÂM canvas</span>
+    paste_x = (target_size - new_w) // <span class="num">2</span>
+    paste_y = (target_size - new_h) // <span class="num">2</span>
+    canvas.paste(img, (paste_x, paste_y))
+    <span class="kw">return</span> canvas
+
+
+<span class="kw2">def</span> <span class="fn">binarize_mask</span>(mask_img):
+    <span class="dstr">"""
+    Đảm bảo mask chỉ có 2 giá trị: 0 hoặc 255.
+    Gọi CẢ TRƯỚC VÀ SAU resize vì BILINEAR có thể tạo giá trị trung gian.
+    """</span>
+    arr = np.array(mask_img)
+    arr = (arr > <span class="num">127</span>).astype(np.uint8) * <span class="num">255</span>
+    <span class="kw">return</span> Image.fromarray(arr, mode=<span class="str">"L"</span>)</pre>
+      </div>
+    </section>
+
+    <section class="section" id="module5">
+      <div class="section-header">
+        <div class="section-num">5</div>
+        <div class="section-title">5v1_split_data.py — Chia Dataset</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-card-header"><span class="info-card-icon">🎲</span><span class="info-card-title">Tỉ lệ chia</span></div>
+          <p><strong style="color:var(--accent-red)">Train: 70%</strong> · Huấn luyện mô hình<br>
+             <strong style="color:var(--accent-yellow)">Val: 15%</strong> · Điều chỉnh, chọn model tốt nhất<br>
+             <strong style="color:var(--accent-blue)">Test: 15%</strong> · Đánh giá cuối cùng (không dùng trong train)</p>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header"><span class="info-card-icon">🌱</span><span class="info-card-title">Reproducibility</span></div>
+          <p><code>random.seed(42)</code> đảm bảo mỗi lần chạy đều chia cùng một bộ.
+          Quan trọng để so sánh kết quả giữa các lần train khác nhau.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header"><span class="info-card-icon">❓</span><span class="info-card-title">Tại sao shuffle?</span></div>
+          <p>Data sinh theo thứ tự <code>img_000001 → img_003000</code>. Không shuffle → train/val/test không đồng đều về độ khó.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODULE 6 -->
+    <section class="section" id="module6">
+      <div class="section-header">
+        <div class="section-num">6</div>
+        <div class="section-title">6v1_unet_model.py — Huấn Luyện AI (File Trung Tâm)</div>
+      </div>
+      <div class="alert alert-warn">
+        <strong>⭐ File quan trọng nhất</strong> (~1340 dòng). Chứa toàn bộ pipeline huấn luyện AI:
+        data loading, model building, loss functions, training loop, evaluation, checkpoint management.
+      </div>
+
+      <!-- Channels -->
+      <h3 style="font-size:15px;font-weight:600;margin:20px 0 12px;color:var(--text-primary)">📡 Output Channels (4 kênh dự đoán)</h3>
+      <div class="channel-diagram">
+        <div class="channel-card ch-a">
+          <div class="ch-label">A</div>
+          <div class="ch-name">Vùng NST thứ nhất</div>
+          <div class="ch-desc">Mask vùng thuộc riêng NST A</div>
+          <div class="ch-weight">Threshold: <strong>0.50</strong> · Weight: <strong>1.25</strong></div>
+        </div>
+        <div class="channel-card ch-b">
+          <div class="ch-label">B</div>
+          <div class="ch-name">Vùng NST thứ hai</div>
+          <div class="ch-desc">Mask vùng thuộc riêng NST B</div>
+          <div class="ch-weight">Threshold: <strong>0.50</strong> · Weight: <strong>1.25</strong></div>
+        </div>
+        <div class="channel-card ch-c">
+          <div class="ch-label">C</div>
+          <div class="ch-name">Vùng Chồng Lấp (Overlap)</div>
+          <div class="ch-desc">A ∩ B · Vùng hai NST đè lên nhau</div>
+          <div class="ch-weight">Threshold: <strong>0.40</strong> · Weight: <strong>3.75 ⭐</strong></div>
+        </div>
+        <div class="channel-card ch-e">
+          <div class="ch-label">E</div>
+          <div class="ch-name">Edge (Đường Biên)</div>
+          <div class="ch-desc">Auxiliary channel · Không xuất ra kết quả cuối</div>
+          <div class="ch-weight">Tự động sinh từ A∪B∪C · Weight: <strong>1.00</strong></div>
+        </div>
+      </div>
+      <div class="alert alert-info">
+        <strong>Tại sao C có weight 3.75?</strong> Vùng C (overlap) chiếm diện tích nhỏ.
+        Nếu không có trọng số cao, model sẽ "bỏ qua" C vì contribution vào loss nhỏ.
+        <code>3.75 = 3 × 1.25</code> → C quan trọng bằng tổng A + B + 50%.
+      </div>
+
+      <!-- Functions table -->
+      <h3 style="font-size:15px;font-weight:600;margin:20px 0 12px;color:var(--text-primary)">🔧 Các hàm/lớp chính</h3>
+      <div class="table-wrapper">
+        <table class="func-table">
+          <thead><tr><th>Hàm / Lớp</th><th>Loại</th><th>Mô tả tiếng Việt</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="func-name">TrainConfig</span><span class="func-tag tag-util">dataclass</span></td>
+              <td>Config</td>
+              <td>Tập trung toàn bộ hyperparameters vào một chỗ: epochs, batch_size, learning_rate, patience, base_filters, distill weights...</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">make_boundary_channel(mask_abc, k=3)</span><span class="func-tag tag-core">LÕI</span></td>
+              <td>Data Prep</td>
+              <td>Sinh edge channel từ union(A,B,C). Dùng max_pool (dilate) - max_pool(1-x) (erode) = đường biên width 1-3px.</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">make_distill_dataset(ds, teacher)</span><span class="func-tag tag-core">LÕI</span></td>
+              <td>Distillation</td>
+              <td>Wrap tf.data.Dataset: thêm soft label từ Teacher frozen. Chạy num_parallel_calls=1 tránh OOM khi Teacher forward pass trong data map.</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">attention_gate(skip, gating, filters)</span><span class="func-tag tag-core">LÕI</span></td>
+              <td>Model Layer</td>
+              <td>θ(skip) + φ(gating) → ReLU → σ → attention weights. Nhân với skip connection. Giúp decoder tập trung vào vùng NST.</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">build_unet(input_shape, base_filters)</span><span class="func-tag tag-core">LÕI</span></td>
+              <td>Model Builder</td>
+              <td>Xây Hybrid Attention U-Net 4 levels. Tái sử dụng cho cả Teacher (f=48) và Student (f=24) bằng base_filters.</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">hybrid_loss(y_true, y_pred)</span><span class="func-tag tag-metric">LOSS</span></td>
+              <td>Loss Function</td>
+              <td>weighted_BCE + weighted_Dice. Dùng CHANNEL_WEIGHTS. Áp dụng cho Teacher và hard-label phase của Student.</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">student_distill_loss(y_true, y_pred)</span><span class="func-tag tag-core">LÕI</span></td>
+              <td>Loss Function</td>
+              <td>y_true 8 channels [hard_ABCE + soft_ABCE]. Loss = 0.65×hard_loss + 0.35×MSE(soft, pred)×weights.</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">choose_fixed_batch_size(train_n, val_n, req)</span><span class="func-tag tag-util">HỖ TRỢ</span></td>
+              <td>Optimization</td>
+              <td>Chọn batch size lớn nhất chia hết cả train và val. Tránh batch shape thay đổi giữa epoch → XLA recompile chậm.</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">build_or_resume_role(results_dir, role, ...)</span><span class="func-tag tag-core">LÕI</span></td>
+              <td>Checkpoint</td>
+              <td>Logic tự động resume: tìm epoch checkpoint mới nhất → load; không có → load best.keras; không có → build mới.</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">CleanEpochLogger</span><span class="func-tag tag-util">Callback</span></td>
+              <td>Keras Callback</td>
+              <td>In log gọn mỗi epoch và mỗi batch, tránh progress bar Keras vỡ ký tự trên terminal Colab.</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">evaluate_split(model, dataset_dir, split, ...)</span><span class="func-tag tag-metric">METRIC</span></td>
+              <td>Evaluation</td>
+              <td>Predict batchwise → tính Dice/IoU/PixelAcc bằng NumPy (chính xác hơn Keras metrics) → lưu JSON + CSV.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="code-container" style="margin-top:16px">
+        <div class="code-header">
+          <div class="code-header-left">
+            <span class="code-lang">Python</span>
+            <span class="code-filename">6v1 — student_distill_loss (hàm loss quan trọng nhất)</span>
+          </div>
+        </div>
+        <pre><span class="cm"># Biến global, được set lại trong compile_student()</span>
+CURRENT_HARD_LOSS_WEIGHT  = tf.Variable(<span class="num">0.65</span>, trainable=<span class="kw">False</span>, dtype=tf.float32)
+CURRENT_DISTILL_LOSS_WEIGHT = tf.Variable(<span class="num">0.35</span>, trainable=<span class="kw">False</span>, dtype=tf.float32)
+
+<span class="kw2">def</span> <span class="fn">student_distill_loss</span>(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
+    <span class="dstr">"""
+    Loss function cho Student trong Teacher-Student Distillation.
+    
+    y_true có 8 channels = concat(hard_ABCE, soft_ABCE):
+        - channels 0..3: nhãn cứng từ ground truth (0/1)
+        - channels 4..7: soft output của Teacher (xác suất 0..1)
+    
+    Loss = 0.65 × hybrid_loss(hard, pred)      ← học từ ground truth
+         + 0.35 × MSE(soft, pred) × weights    ← học từ Teacher
+    
+    Tại sao 65/35?
+        100% hard = mất lợi ích distillation.
+        100% soft = mất độ chính xác với ground truth.
+        65/35 = cân bằng tốt nhất theo thực nghiệm.
+    """</span>
+    hard = y_true[..., :NUM_OUTPUT_CHANNELS]           <span class="cm"># channels 0-3</span>
+    soft = y_true[..., NUM_OUTPUT_CHANNELS:NUM_OUTPUT_CHANNELS*<span class="num">2</span>]  <span class="cm"># channels 4-7</span>
+
+    hard_loss = hybrid_loss(hard, y_pred)
+
+    <span class="cm"># MSE giữa Teacher output và Student output, weighted theo kênh</span>
+    mse = tf.square(tf.cast(soft, tf.float32) - tf.cast(y_pred, tf.float32))
+    distill = tf.reduce_mean(mse * CHANNEL_WEIGHTS)
+
+    <span class="kw">return</span> (CURRENT_HARD_LOSS_WEIGHT * hard_loss
+          + CURRENT_DISTILL_LOSS_WEIGHT * distill)
+
+
+<span class="kw2">def</span> <span class="fn">make_boundary_channel</span>(mask_abc: tf.Tensor, k: int = <span class="num">3</span>) -> tf.Tensor:
+    <span class="dstr">"""
+    Sinh edge channel từ union(A,B,C) bằng morphology trên TensorFlow.
+    Edge = Dilation(fg) - Erosion(fg)  ← đường viền mask
+    
+    Không cần label edge thủ công — tự động từ mask A/B/C!
+    """</span>
+    fg = tf.reduce_max(mask_abc, axis=-<span class="num">1</span>, keepdims=<span class="kw">True</span>)   <span class="cm"># union A∪B∪C</span>
+    x = tf.expand_dims(fg, axis=<span class="num">0</span>)
+    dil = tf.nn.max_pool2d(x, ksize=k, strides=<span class="num">1</span>, padding=<span class="str">"SAME"</span>)
+    ero = <span class="num">1.0</span> - tf.nn.max_pool2d(<span class="num">1.0</span>-x, ksize=k, strides=<span class="num">1</span>, padding=<span class="str">"SAME"</span>)
+    edge = tf.clip_by_value(dil - ero, <span class="num">0.0</span>, <span class="num">1.0</span>)
+    <span class="kw">return</span> tf.squeeze(edge, axis=<span class="num">0</span>)</pre>
+      </div>
+    </section>
+
+    <!-- MODULE 7 -->
+    <section class="section" id="module7">
+      <div class="section-header">
+        <div class="section-num">7</div>
+        <div class="section-title">7v1_predict_real_overlap.py — Predict &amp; Tách A/B</div>
+      </div>
+      <div class="alert alert-tip">
+        <strong>🎯 Đây là sản phẩm cuối cùng:</strong> Nhận ảnh NST thật → tách thành <code>*_A.png</code> và <code>*_B.png</code>
+        với nền trong suốt, phần bị che (vùng C) được inpaint tự động.
+      </div>
+      <div class="table-wrapper">
+        <table class="func-table">
+          <thead><tr><th>Hàm</th><th>Loại</th><th>Mô tả</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="func-name">resize_with_padding_image(img, 256)</span><span class="func-tag tag-core">LÕI</span></td>
+              <td>Preprocess</td>
+              <td>Giống 4v1 nhưng trả thêm <code>meta dict</code> chứa orig_w, orig_h, paste_x, paste_y để unpad sau predict.</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">restore_mask_to_original(mask_256, meta)</span><span class="func-tag tag-core">LÕI</span></td>
+              <td>Post-process</td>
+              <td>Đảo ngược padding: crop vùng valid → resize NEAREST → kích thước ảnh gốc. Map mask 256→gốc chính xác.</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">inpaint_instance(gray, mask, overlap, r=3)</span><span class="func-tag tag-core">LÕI</span></td>
+              <td>Inpainting</td>
+              <td>Fill vùng C bằng cv2.INPAINT_TELEA. Mask vùng ngoài NST thành trắng trước → tránh lấy texture NST kia.</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">save_separated_ab(...)</span><span class="func-tag tag-output">OUTPUT</span></td>
+              <td>File Output</td>
+              <td>Lưu 4 file: A.png (A∪C inpainted), B.png (B∪C inpainted), A_mask.png, B_mask.png.</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">make_overlay(base_img, mask_A, mask_B, mask_C)</span><span class="func-tag tag-util">HỖ TRỢ</span></td>
+              <td>Visualization</td>
+              <td>Overlay màu: A=đỏ(60%), B=xanh(60%), C=vàng(70%). Dùng để kiểm tra bằng mắt.</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">find_model_path(arg)</span><span class="func-tag tag-util">HỖ TRỢ</span></td>
+              <td>IO</td>
+              <td>Tự động tìm model theo ưu tiên: inference → apply → student → teacher. Không cần chỉ định thủ công.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="code-container" style="margin-top:12px">
+        <div class="code-header">
+          <div class="code-header-left">
+            <span class="code-lang">Python</span>
+            <span class="code-filename">7v1 — inpaint_instance + save_separated_ab (hàm output cuối)</span>
+          </div>
+        </div>
+        <pre><span class="kw2">def</span> <span class="fn">inpaint_instance</span>(gray, instance_mask, overlap_mask, radius=<span class="num">3</span>):
+    <span class="dstr">"""
+    [HÀM LÕI] Fill vùng bị che khuất (C) bằng TELEA inpainting.
+    
+    Vấn đề: NST A bị NST B che ở vùng C → texture vùng đó là của B.
+    Giải pháp: 
+        1. Mask vùng ngoài A thành TRẮNG → loại texture B
+        2. Dilate nhẹ vùng fill → tránh viền còn sót
+        3. cv2.INPAINT_TELEA → đoán texture từ vùng A visible
+    
+    Tại sao TELEA thay vì Navier-Stokes?
+        NST là ảnh y tế đen trắng đơn giản. TELEA (Fast Marching)
+        cho kết quả mượt hơn cho texture đơn giản.
+    """</span>
+    gray_u8 = gray.astype(np.uint8)
+    work = gray_u8.copy()
+    work[~instance_mask] = <span class="num">255</span>  <span class="cm"># ← TRICK: xóa texture NST kia</span>
+
+    fill_region = (instance_mask &amp; overlap_mask).astype(np.uint8) * <span class="num">255</span>
+    <span class="kw">if</span> fill_region.sum() == <span class="num">0</span>: <span class="kw">return</span> work
+
+    <span class="cm"># Dilate nhẹ để không còn artifact ở biên</span>
+    kernel = np.ones((<span class="num">3</span>,<span class="num">3</span>), np.uint8)
+    fill_region = cv2.dilate(fill_region, kernel, iterations=<span class="num">1</span>)
+    fill_region[~instance_mask] = <span class="num">0</span>
+
+    <span class="kw">return</span> cv2.inpaint(work, fill_region, inpaintRadius=radius,
+                      flags=cv2.INPAINT_TELEA)
+
+
+<span class="kw2">def</span> <span class="fn">save_separated_ab</span>(original_gray, stem, mask_A, mask_B, mask_C,
+                      out_dir, transparent=<span class="kw">True</span>):
+    <span class="dstr">"""
+    [OUTPUT CHÍNH] Tạo sản phẩm cuối cùng: 2 file NST đã tách.
+    
+    Tại sao OR với C?
+        C là vùng overlap → thuộc về CẢ A lẫn B (amodal segmentation).
+        Giữ full hình thái từng NST → phân loại karyotype chính xác.
+    """</span>
+    gray = np.array(original_gray.convert(<span class="str">"L"</span>))
+
+    <span class="cm"># A_full = A ∪ C, B_full = B ∪ C (giữ full hình thái)</span>
+    A_full = clean_mask(mask_A | mask_C, keep_components=<span class="num">1</span>)
+    B_full = clean_mask(mask_B | mask_C, keep_components=<span class="num">1</span>)
+    C_clean = clean_mask(mask_C, keep_components=<span class="num">1</span>)
+
+    <span class="cm"># Inpaint vùng C cho từng NST</span>
+    img_A = rgba_from_instance(gray, A_full, C_clean, transparent=transparent)
+    img_B = rgba_from_instance(gray, B_full, C_clean, transparent=transparent)
+
+    <span class="cm"># Lưu 4 file output</span>
+    img_A.save(out_dir / <span class="str">f"</span><span class="str">{stem}_A.png"</span>)
+    img_B.save(out_dir / <span class="str">f"</span><span class="str">{stem}_B.png"</span>)
+    save_binary_mask(A_full, out_dir / <span class="str">f"</span><span class="str">{stem}_A_mask.png"</span>)
+    save_binary_mask(B_full, out_dir / <span class="str">f"</span><span class="str">{stem}_B_mask.png"</span>)</pre>
+      </div>
+    </section>
+
+    <!-- MODULE 8 -->
+    <section class="section" id="module8">
+      <div class="section-header">
+        <div class="section-num">8</div>
+        <div class="section-title">8v1_evaluate_synthetic_test.py — Đánh Giá Model</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-card-header"><span class="info-card-icon">📐</span><span class="info-card-title">Dice Score</span></div>
+          <p>Dice = 2|A∩B| / (|A|+|B|). Metric chính. Khi cả 2 đều rỗng → Dice = 1 (dự đoán đúng).</p>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header"><span class="info-card-icon">📏</span><span class="info-card-title">IoU Score</span></div>
+          <p>IoU = |A∩B| / |A∪B|. Metric phụ, khắt khe hơn Dice. Thường thấp hơn Dice 10-20%.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header"><span class="info-card-icon">🎯</span><span class="info-card-title">Pixel Accuracy</span></div>
+          <p>Tỉ lệ pixel phân loại đúng. Có thể cao giả khi nền chiếm nhiều → Dice thực tế hơn.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header"><span class="info-card-icon">🖼️</span><span class="info-card-title">Visualization</span></div>
+          <p>Grid 2×4: Input, GT overlay, Pred overlay, Error map, GT A, Pred A, GT B, Pred B. Riêng kênh C: grid 1×4.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ARCHITECTURE ===== -->
+    <section class="section" id="architecture">
+      <div class="section-header">
+        <div class="section-num">🏗</div>
+        <div class="section-title">Kiến Trúc Mô Hình AI — Hybrid Attention U-Net</div>
+      </div>
+      <div class="arch-box">
+<span class="arch-title">INPUT: [B, 256, 256, 1]  (grayscale, normalized 0..1)
+│</span>
+<span class="arch-layer">├── ENCODER (Giảm kích thước, tăng features)
+│   ├── Level 1: conv_block(f)     skip1 [B,256,256, f]  → MaxPool → [B,128,128, f]
+│   ├── Level 2: conv_block(2f)    skip2 [B,128,128,2f]  → MaxPool → [B, 64, 64,2f]
+│   ├── Level 3: conv_block(4f)    skip3 [B, 64, 64,4f]  → MaxPool → [B, 32, 32,4f]  dropout=0.05
+│   └── Level 4: conv_block(8f)    skip4 [B, 32, 32,8f]  → MaxPool → [B, 16, 16,8f]  dropout=0.10
+│</span>
+<span class="arch-title">├── BOTTLENECK: conv_block(16f)  [B, 16, 16, 16f]   dropout=0.15</span>
+<span class="arch-title">│                    │</span>
+<span class="arch-layer">├── DECODER (Tăng kích thước, kết hợp skip + attention)
+│   ├── Level 4: ConvTranspose(8f) → AttentionGate(skip4, gating) → Concat → conv_block(8f)
+│   ├── Level 3: ConvTranspose(4f) → AttentionGate(skip3, gating) → Concat → conv_block(4f)
+│   ├── Level 2: ConvTranspose(2f) → AttentionGate(skip2, gating) → Concat → conv_block(2f)
+│   └── Level 1: ConvTranspose(f)  → AttentionGate(skip1, gating) → Concat → conv_block(f)</span>
+│
+<span class="arch-title">└── OUTPUT HEAD: Conv2D(4, 1×1, sigmoid) → [B, 256, 256, 4]
+    [channel 0: A_prob] [channel 1: B_prob] [channel 2: C_prob] [channel 3: Edge_prob]
+
+──────────────────────────────────────────────────
+ ATTENTION GATE (chi tiết):
+──────────────────────────────────────────────────</span>
+<span class="arch-teacher"> skip_feature  ──→  Conv2D(f,1×1) ──→ θ(skip)
+                                              ↓
+ gating_signal ──→  Conv2D(f,1×1) ──→ φ(gate) → Add → ReLU → Conv2D(1,1×1) → Sigmoid = α
+                                                                                          ↓
+ skip × α  ←───────────────────────────────────────────────────────────────────────────────</span>
+
+<span class="arch-title">──────────────────────────────────────────────────
+ TEACHER vs STUDENT:
+──────────────────────────────────────────────────</span>
+<span class="arch-teacher"> TEACHER: f = base_filters = 48  → ~9.3M params  → Học trước, frozen sau khi train</span>
+<span class="arch-student"> STUDENT: f = base_filters = 24  → ~2.3M params  → Học từ hard labels + soft Teacher output</span>
+      </div>
+    </section>
+
+    <!-- ===== FUNCTION LOOKUP ===== -->
+    <section class="section" id="functions">
+      <div class="section-header">
+        <div class="section-num">🔍</div>
+        <div class="section-title">Bảng Tra Cứu Hàm Toàn Dự Án</div>
+      </div>
+      <div class="table-wrapper">
+        <table class="func-table">
+          <thead><tr><th>Hàm / Lớp</th><th>File</th><th>Dòng (xấp xỉ)</th><th>Ghi chú nhanh</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="func-name">build_unet()</span><span class="func-tag tag-core">LÕI</span></td>
+              <td style="color:var(--accent-blue);font-size:12px">6v1_unet_model.py</td>
+              <td style="color:var(--text-muted)">~420</td>
+              <td>Xây toàn bộ model Attention U-Net</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">attention_gate(skip, gating, f)</span><span class="func-tag tag-core">LÕI</span></td>
+              <td style="color:var(--accent-blue);font-size:12px">6v1_unet_model.py</td>
+              <td style="color:var(--text-muted)">~405</td>
+              <td>Cơ chế attention trong decoder</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">student_distill_loss()</span><span class="func-tag tag-core">LÕI</span></td>
+              <td style="color:var(--accent-blue);font-size:12px">6v1_unet_model.py</td>
+              <td style="color:var(--text-muted)">~470</td>
+              <td>Loss: 65% hard + 35% distill MSE</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">make_boundary_channel()</span><span class="func-tag tag-core">LÕI</span></td>
+              <td style="color:var(--accent-blue);font-size:12px">6v1_unet_model.py</td>
+              <td style="color:var(--text-muted)">~245</td>
+              <td>Sinh edge target tự động</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">build_or_resume_role()</span><span class="func-tag tag-core">LÕI</span></td>
+              <td style="color:var(--accent-blue);font-size:12px">6v1_unet_model.py</td>
+              <td style="color:var(--text-muted)">~610</td>
+              <td>Resume / Build model logic</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">choose_fixed_batch_size()</span><span class="func-tag tag-util">HỖ TRỢ</span></td>
+              <td style="color:var(--accent-blue);font-size:12px">6v1_unet_model.py</td>
+              <td style="color:var(--text-muted)">~319</td>
+              <td>Tránh XLA recompile shape lẻ</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">CleanEpochLogger (Callback)</span><span class="func-tag tag-util">HỖ TRỢ</span></td>
+              <td style="color:var(--accent-blue);font-size:12px">6v1_unet_model.py</td>
+              <td style="color:var(--text-muted)">~780</td>
+              <td>Log gọn epoch/batch cho Colab</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">make_realistic_overlap_canvas()</span><span class="func-tag tag-core">LÕI</span></td>
+              <td style="color:var(--accent-purple);font-size:12px">3v1_generate_synthetic_masks.py</td>
+              <td style="color:var(--text-muted)">~320</td>
+              <td>Sinh dữ liệu tổng hợp C=A∩B</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">get_border_background(gray)</span><span class="func-tag tag-core">LÕI</span></td>
+              <td style="color:var(--accent-green);font-size:12px">2v1_prepare_single_chromosomes.py</td>
+              <td style="color:var(--text-muted)">~100</td>
+              <td>Border-connected background detect</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">inpaint_instance(gray, mask, overlap)</span><span class="func-tag tag-core">LÕI</span></td>
+              <td style="color:var(--accent-orange);font-size:12px">7v1_predict_real_overlap.py</td>
+              <td style="color:var(--text-muted)">~290</td>
+              <td>TELEA fill vùng bị che</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">save_separated_ab()</span><span class="func-tag tag-output">OUTPUT</span></td>
+              <td style="color:var(--accent-orange);font-size:12px">7v1_predict_real_overlap.py</td>
+              <td style="color:var(--text-muted)">~330</td>
+              <td>Sản phẩm cuối: A.png + B.png</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">restore_mask_to_original()</span><span class="func-tag tag-core">LÕI</span></td>
+              <td style="color:var(--accent-orange);font-size:12px">7v1_predict_real_overlap.py</td>
+              <td style="color:var(--text-muted)">~130</td>
+              <td>Unpad mask về kích thước gốc</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">resize_with_padding()</span><span class="func-tag tag-util">HỖ TRỢ</span></td>
+              <td style="color:var(--accent-yellow);font-size:12px">4v1_preprocess_to_256.py</td>
+              <td style="color:var(--text-muted)">~55</td>
+              <td>Resize + padding chuẩn hóa ảnh</td>
+            </tr>
+            <tr>
+              <td><span class="func-name">evaluate_split(model, ...)</span><span class="func-tag tag-metric">METRIC</span></td>
+              <td style="color:var(--accent-blue);font-size:12px">6v1_unet_model.py</td>
+              <td style="color:var(--text-muted)">~675</td>
+              <td>Đánh giá chính xác bằng NumPy</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== DESIGN DECISIONS ===== -->
+    <section class="section" id="decisions">
+      <div class="section-header">
+        <div class="section-num">📝</div>
+        <div class="section-title">Nhật Ký Quyết Định Thiết Kế</div>
+      </div>
+      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">
+        Mỗi quyết định đều có lý do kỹ thuật rõ ràng. Đọc trước khi thay đổi bất kỳ tham số nào.
+      </p>
+      <div class="dd-grid">
+        <div class="dd-item">
+          <div class="dd-id">DD-01</div>
+          <div class="dd-content">
+            <div class="dd-title">Dùng Synthetic Data thay vì label thủ công</div>
+            <div class="dd-reason">Ảnh NST thật (overlap_raw) KHÔNG có ground-truth mask. Label thủ công cực kỳ tốn thời gian và chủ quan. Synthetic cho mask chính xác 100% và có thể sinh không giới hạn.</div>
+            <div class="dd-file">→ 3v1_generate_synthetic_masks.py</div>
+          </div>
+        </div>
+        <div class="dd-item">
+          <div class="dd-id">DD-02</div>
+          <div class="dd-content">
+            <div class="dd-title">Padding thay vì Stretch khi resize về 256</div>
+            <div class="dd-reason">Stretch làm méo hình thái NST. Trong karyotype, hình dạng NST (dài, ngắn, cong) là đặc trưng quan trọng để phân loại. Padding trắng khớp với nền tự nhiên.</div>
+            <div class="dd-file">→ 4v1_preprocess_to_256.py, 7v1_predict_real_overlap.py</div>
+          </div>
+        </div>
+        <div class="dd-item">
+          <div class="dd-id">DD-03</div>
+          <div class="dd-content">
+            <div class="dd-title">Channel C weight = 3.75 (gấp 3× A và B)</div>
+            <div class="dd-reason">Vùng C chiếm diện tích nhỏ hơn A và B. Không có trọng số cao, model sẽ học cách "bỏ qua" C vì ít ảnh hưởng đến loss tổng thể. 3.75 = 3 × 1.25.</div>
+            <div class="dd-file">→ 6v1_unet_model.py: CHANNEL_WEIGHTS</div>
+          </div>
+        </div>
+        <div class="dd-item">
+          <div class="dd-id">DD-04</div>
+          <div class="dd-content">
+            <div class="dd-title">Threshold C = 0.40 (thấp hơn A/B = 0.50)</div>
+            <div class="dd-reason">Vùng C nằm ở vùng chồng lấp phức tạp, model thường dự đoán với confidence thấp hơn A/B. Threshold thấp hơn giúp recall C tốt hơn.</div>
+            <div class="dd-file">→ 6v1_unet_model.py, 7v1, 8v1: ABC_METRIC_THRESHOLDS</div>
+          </div>
+        </div>
+        <div class="dd-item">
+          <div class="dd-id">DD-05</div>
+          <div class="dd-content">
+            <div class="dd-title">Tắt XLA auto-jit (TF_XLA_FLAGS=--tf_xla_auto_jit=0)</div>
+            <div class="dd-reason">Epoch đầu trên Colab T4 bị treo 10-30 phút do XLA/cuDNN autotune tìm thuật toán tối ưu cho shape đầu tiên. Tắt đi để bắt đầu train ngay.</div>
+            <div class="dd-file">→ 6v1_unet_model.py: os.environ</div>
+          </div>
+        </div>
+        <div class="dd-item">
+          <div class="dd-id">DD-06</div>
+          <div class="dd-content">
+            <div class="dd-title">Fixed batch size chia hết cả train và val</div>
+            <div class="dd-reason">Batch shape thay đổi giữa các epoch (batch lẻ cuối dataset) → XLA/cuDNN phải compile lại kernel → chậm đáng kể. choose_fixed_batch_size() tự động tìm batch tối ưu.</div>
+            <div class="dd-file">→ 6v1_unet_model.py: choose_fixed_batch_size()</div>
+          </div>
+        </div>
+        <div class="dd-item">
+          <div class="dd-id">DD-07</div>
+          <div class="dd-content">
+            <div class="dd-title">Teacher 48 filters, Student 24 filters</div>
+            <div class="dd-reason">Teacher cần capacity lớn để học tốt. Student nhẹ hơn để inference nhanh khi deploy. Student "chắt lọc" kiến thức từ Teacher thay vì phải tự học từ đầu.</div>
+            <div class="dd-file">→ 6v1_unet_model.py: TrainConfig</div>
+          </div>
+        </div>
+        <div class="dd-item">
+          <div class="dd-id">DD-08</div>
+          <div class="dd-content">
+            <div class="dd-title">Distillation: 65% hard label + 35% soft label</div>
+            <div class="dd-reason">100% hard = bỏ lợi ích distillation. 100% soft = mất độ chính xác với ground truth. 65/35 cân bằng tốt nhất theo thực nghiệm trên dataset NST.</div>
+            <div class="dd-file">→ 6v1_unet_model.py: student_distill_loss()</div>
+          </div>
+        </div>
+        <div class="dd-item">
+          <div class="dd-id">DD-09</div>
+          <div class="dd-content">
+            <div class="dd-title">Inpainting bằng TELEA thay vì Navier-Stokes</div>
+            <div class="dd-reason">NST là ảnh y tế đen trắng với texture đơn giản. TELEA (Fast Marching Method, Telea 2004) cho kết quả mượt và ít artifact hơn Navier-Stokes cho loại texture này.</div>
+            <div class="dd-file">→ 7v1_predict_real_overlap.py: inpaint_instance()</div>
+          </div>
+        </div>
+        <div class="dd-item">
+          <div class="dd-id">DD-10</div>
+          <div class="dd-content">
+            <div class="dd-title">Augmentation chỉ dùng Flip, KHÔNG crop/rotate</div>
+            <div class="dd-reason">Crop ngẫu nhiên có thể cắt mất phần NST quan trọng. Rotate mạnh làm lệch hướng NST (A nằm ngang / B đứng là đặc trưng quan trọng). Flip H/V an toàn.</div>
+            <div class="dd-file">→ 6v1_unet_model.py: augment_sample()</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== QUICKSTART ===== -->
+    <section class="section" id="quickstart">
+      <div class="section-header">
+        <div class="section-num">🚀</div>
+        <div class="section-title">Hướng Dẫn Chạy Nhanh (Quickstart)</div>
+      </div>
+
+      <h3 style="font-size:14px;font-weight:600;color:var(--text-primary);margin:0 0 8px">📌 Lần đầu tiên — Full Pipeline</h3>
+      <div class="cmd-block">
+<span class="cmd-comment"># 1. Đặt ảnh NST đơn lẻ vào thư mục:</span>
+<span class="cmd-comment">#    source_data/single_chromosomes/*.png</span>
+<span class="cmd-comment"># 2. Đặt ảnh NST thật cần phân tích vào:</span>
+<span class="cmd-comment">#    source_data/overlap_raw/*.png</span>
+<span class="cmd-comment"># 3. Chạy từng bước:</span>
+
+<span class="cmd-prompt">$ </span>python 1v1_create_folder.py
+<span class="cmd-prompt">$ </span>python 2v1_remove_subfolder.py        <span class="cmd-comment"># Nếu cần dọn subfolder thừa</span>
+<span class="cmd-prompt">$ </span>python 2v1_prepare_single_chromosomes.py
+<span class="cmd-prompt">$ </span>python 3v1_generate_synthetic_masks.py
+<span class="cmd-prompt">$ </span>python 4v1_preprocess_to_256.py
+<span class="cmd-prompt">$ </span>python 5v1_split_data.py
+<span class="cmd-prompt">$ </span>python 6v1_unet_model.py --epochs 200 --batch-size 64 --min-acc 0.85 --auto-retrain-rounds 1
+<span class="cmd-prompt">$ </span>python 7v1_predict_real_overlap.py</div>
+
+      <h3 style="font-size:14px;font-weight:600;color:var(--text-primary);margin:20px 0 8px">📊 Chỉ Đánh Giá (sau khi có model)</h3>
+      <div class="cmd-block">
+<span class="cmd-prompt">$ </span>python 8v1_evaluate_synthetic_test.py --split test --visualize 50</div>
+
+      <h3 style="font-size:14px;font-weight:600;color:var(--text-primary);margin:20px 0 8px">🔄 Resume Train (đã có checkpoint)</h3>
+      <div class="cmd-block">
+<span class="cmd-comment"># Script tự động resume từ epoch checkpoint mới nhất</span>
+<span class="cmd-prompt">$ </span>python 6v1_unet_model.py --epochs 200
+
+<span class="cmd-comment"># Force train lại từ đầu (xóa checkpoint)</span>
+<span class="cmd-prompt">$ </span>python 6v1_unet_model.py --epochs 200 --force-restart</div>
+
+      <h3 style="font-size:14px;font-weight:600;color:var(--text-primary);margin:20px 0 8px">💾 Nếu OOM trên GPU Yếu (T4, 16GB VRAM)</h3>
+      <div class="cmd-block">
+<span class="cmd-prompt">$ </span>python 6v1_unet_model.py --epochs 200 --batch-size 32 --min-acc 0.85
+<span class="cmd-comment"># hoặc</span>
+<span class="cmd-prompt">$ </span>python 6v1_unet_model.py --epochs 200 --batch-size 16 --min-acc 0.85</div>
+
+      <h3 style="font-size:14px;font-weight:600;color:var(--text-primary);margin:20px 0 8px">🎨 Output Nền Trắng (thay vì trong suốt)</h3>
+      <div class="cmd-block">
+<span class="cmd-prompt">$ </span>python 7v1_predict_real_overlap.py --white-background</div>
+
+      <div class="alert alert-warn" style="margin-top:20px">
+        <strong>⚠️ Ghi chú bảo trì:</strong>
+        Nếu thay đổi <code>IMG_SIZE</code> → phải chạy lại từ bước 4v1.
+        Nếu thay đổi kiến trúc model → checkpoint cũ không tương thích, dùng <code>--force-restart</code>.
+        Khi thêm thư viện mới → cập nhật mục Tech Stack trong tài liệu.
+        Khi có quyết định thiết kế mới → ghi vào Nhật Ký DD ở trên.
+      </div>
+    </section>
+
+  </div><!-- end content-area -->
+
+  <div class="footer">
+    <span>🧬 Dự Án Phân Tích Hình Thái Nhiễm Sắc Thể · Pipeline 8 bước · Teacher-Student Attention U-Net</span>
+    <span>Cập nhật: 2026-06-10</span>
+  </div>
+</div><!-- end #main -->
+
+<script>
+// Active nav
+function setActive(el) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// Scroll spy
+const sections = document.querySelectorAll('.section, #overview, #techstack, #pipeline');
+const navItems = document.querySelectorAll('.nav-item');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id || entry.target.closest('[id]')?.id;
+      if (id) {
+        navItems.forEach(item => {
+          item.classList.toggle('active', item.getAttribute('href') === '#' + id);
+        });
+      }
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+
+document.querySelectorAll('[id]').forEach(el => observer.observe(el));
+
+// Copy button
+function copyCode(btn) {
+  const pre = btn.closest('.code-container').querySelector('pre');
+  const text = pre.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.textContent = '📋 Copy', 2000);
+  });
+}
+
+// File tabs
+document.querySelectorAll('.file-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const group = tab.closest('.file-tabs').parentElement;
+    group.querySelectorAll('.file-tab').forEach(t => t.classList.remove('active'));
+    group.querySelectorAll('.file-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    const target = tab.dataset.target;
+    document.getElementById(target)?.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
