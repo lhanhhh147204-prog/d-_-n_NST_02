@@ -1,34 +1,30 @@
 # ============================================================
-# FILE: pipeline/03_inference.py
-# CHỨC NĂNG: Dự đoán ảnh thực tế và inpaint tách A/B
+# FILE: pipeline/step03_inference.py
+# CHỨC NĂNG: Controller — Dự đoán ảnh thực tế và inpaint tách A/B
+# Logic xử lý ảnh nằm trong: utils/, morphology/
 # ============================================================
 
-import os
 from pathlib import Path
 import numpy as np
 from PIL import Image
-import tensorflow as tf
 from tensorflow import keras
 
-from config.settings import (
-    RAW_OVERLAP_DIR, RESULTS_DIR, IMG_SIZE, ABC_THRESHOLDS
-)
-from core.image_utils import (
-    resize_with_padding, restore_mask_to_original, 
-    clean_mask, make_overlay, rgba_from_instance
-)
-from core.model_unet import hybrid_loss, student_distill_loss
+from config.settings import RAW_OVERLAP_DIR, RESULTS_DIR, IMG_SIZE, ABC_THRESHOLDS
+from core.models.losses import hybrid_loss, student_distill_loss
+from morphology.mask_ops import clean_mask
+from morphology.inpainting import rgba_from_instance
+from utils.image_io import resize_with_padding, restore_mask_to_original, prepare_input
 
-def prepare_input(img: Image.Image) -> np.ndarray:
-    arr = np.array(img).astype(np.float32) / 255.0
-    arr = np.expand_dims(arr, axis=-1)
-    return np.expand_dims(arr, axis=0)
 
-def save_binary_mask(mask: np.ndarray, path: Path):
-    mask_img = (mask.astype(np.uint8) * 255)
-    Image.fromarray(mask_img, mode="L").save(path)
-
-def save_separated_ab(original_gray: Image.Image, stem: str, mask_A: np.ndarray, mask_B: np.ndarray, mask_C: np.ndarray, out_dir: Path):
+def save_separated_ab(
+    original_gray: Image.Image,
+    stem: str,
+    mask_A: np.ndarray,
+    mask_B: np.ndarray,
+    mask_C: np.ndarray,
+    out_dir: Path,
+):
+    """Tách và lưu NST A, B riêng biệt sau khi inpaint vùng chồng (C)."""
     out_dir.mkdir(parents=True, exist_ok=True)
     gray = np.array(original_gray.convert("L"))
 
@@ -42,12 +38,14 @@ def save_separated_ab(original_gray: Image.Image, stem: str, mask_A: np.ndarray,
     img_A.save(out_dir / f"{stem}_A.png")
     img_B.save(out_dir / f"{stem}_B.png")
 
+
 def run_inference(input_dir=RAW_OVERLAP_DIR, model_path=None):
+    """Chạy dự đoán toàn bộ ảnh NST chồng trong input_dir."""
     if model_path is None:
         model_path = RESULTS_DIR / "best_student.keras"
         if not model_path.exists():
             model_path = RESULTS_DIR / "best_teacher.keras"
-            
+
     if not model_path.exists():
         print(f"❌ Không tìm thấy model tại {model_path}")
         return
@@ -58,8 +56,8 @@ def run_inference(input_dir=RAW_OVERLAP_DIR, model_path=None):
     print(f"Loading model: {model_path}")
     # Load với custom_objects để không lỗi khi parse loss function dù compile=False
     custom_objects = {
-        "hybrid_loss": hybrid_loss, 
-        "student_distill_loss": student_distill_loss
+        "hybrid_loss": hybrid_loss,
+        "student_distill_loss": student_distill_loss,
     }
     model = keras.models.load_model(model_path, custom_objects=custom_objects, compile=False)
 
@@ -72,7 +70,7 @@ def run_inference(input_dir=RAW_OVERLAP_DIR, model_path=None):
     for img_path in images:
         stem = img_path.stem
         original_img = Image.open(img_path).convert("L")
-        
+
         processed_img, meta = resize_with_padding(original_img, IMG_SIZE, is_mask=False)
         x = prepare_input(processed_img)
         pred = model.predict(x, verbose=0)[0]
@@ -86,8 +84,9 @@ def run_inference(input_dir=RAW_OVERLAP_DIR, model_path=None):
         mask_C = restore_mask_to_original(mask_C_256, meta)
 
         save_separated_ab(original_img, stem, mask_A, mask_B, mask_C, out_dir)
-        
+
     print(f"✅ Hoàn thành dự đoán. Kết quả lưu tại: {out_dir}")
+
 
 if __name__ == "__main__":
     run_inference()

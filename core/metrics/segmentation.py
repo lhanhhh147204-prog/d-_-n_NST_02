@@ -1,9 +1,11 @@
 # ============================================================
-# FILE: core/metrics.py
-# CHỨC NĂNG: Các hàm tính toán số liệu đánh giá (NumPy)
+# FILE: core/metrics/segmentation.py
+# CHỨC NĂNG: Các hàm tính toán số liệu đánh giá phân đoạn (NumPy)
+# CHUYỂN TỪ: core/metrics.py
 # ============================================================
 
 import numpy as np
+
 
 def calculate_dice(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     """
@@ -18,6 +20,7 @@ def calculate_dice(y_true: np.ndarray, y_pred: np.ndarray) -> float:
         return 1.0
     return 2.0 * intersection / total
 
+
 def calculate_iou(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     """
     Tính Intersection over Union (IoU) = |A ∩ B| / |A ∪ B|.
@@ -30,6 +33,7 @@ def calculate_iou(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     if union == 0:
         return 1.0
     return intersection / union
+
 
 def calculate_pixel_accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     """Tính tỉ lệ số pixel được dự đoán đúng trên tổng số pixel."""

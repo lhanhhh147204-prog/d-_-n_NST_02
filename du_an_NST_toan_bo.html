@@ -592,35 +592,35 @@
   <div class="nav-section">
     <div class="nav-section-title">Các Module Code</div>
     <a class="nav-item" href="#module1" onclick="setActive(this)">
-      <span class="icon">📁</span> Bước 1 · Tạo Thư Mục
+      <span class="icon">📁</span> Bước 1 · Data Prep
       <span class="badge">39 dòng</span>
     </a>
     <a class="nav-item" href="#module2" onclick="setActive(this)">
-      <span class="icon">✂️</span> Bước 2 · Tách NST Đơn
+      <span class="icon">✂️</span> Bước 2 · Tách NST Đơn (preprocessing.py)
       <span class="badge">~290 dòng</span>
     </a>
     <a class="nav-item" href="#module3" onclick="setActive(this)">
-      <span class="icon">🧪</span> Bước 3 · Sinh Data Tổng Hợp
+      <span class="icon">🧪</span> Bước 3 · Sinh Data Tổng Hợp (preprocessing.py)
       <span class="badge">~450 dòng</span>
     </a>
     <a class="nav-item" href="#module4" onclick="setActive(this)">
-      <span class="icon">🔲</span> Bước 4 · Chuẩn Hóa 256×256
+      <span class="icon">🔲</span> Bước 4 · Chuẩn Hóa (image_io.py)
       <span class="badge">~150 dòng</span>
     </a>
     <a class="nav-item" href="#module5" onclick="setActive(this)">
-      <span class="icon">✂️</span> Bước 5 · Chia Train/Val/Test
+      <span class="icon">✂️</span> Bước 5 · Chia Train/Val/Test (step01_data_prep.py)
       <span class="badge">~100 dòng</span>
     </a>
     <a class="nav-item" href="#module6" onclick="setActive(this)">
-      <span class="icon">🤖</span> Bước 6 · Train AI Model
+      <span class="icon">🤖</span> Bước 6 · Train AI Model (step02_trainer.py)
       <span class="badge">~1340 dòng</span>
     </a>
     <a class="nav-item" href="#module7" onclick="setActive(this)">
-      <span class="icon">🎯</span> Bước 7 · Predict & Tách A/B
+      <span class="icon">🎯</span> Bước 7 · Predict (step03_inference.py)
       <span class="badge">~500 dòng</span>
     </a>
     <a class="nav-item" href="#module8" onclick="setActive(this)">
-      <span class="icon">📊</span> Bước 8 · Đánh Giá Model
+      <span class="icon">📊</span> Bước 8 · Đánh Giá (step04_evaluator.py)
       <span class="badge">~420 dòng</span>
     </a>
   </div>
@@ -748,7 +748,7 @@
           <div class="step-card">
             <div class="step-card-header">
               <span class="step-card-title">Khởi Tạo Thư Mục</span>
-              <span class="step-card-file">1v1_create_folder.py</span>
+              <span class="step-card-file">pipeline/step01_data_prep.py</span>
             </div>
             <p>Tạo toàn bộ cây thư mục cần thiết. Chạy MỘT LẦN DUY NHẤT khi setup dự án mới.</p>
             <div class="step-io">
@@ -764,7 +764,7 @@
           <div class="step-card">
             <div class="step-card-header">
               <span class="step-card-title">Tách NST Đơn Lẻ Khỏi Nền</span>
-              <span class="step-card-file">2v1_prepare_single_chromosomes.py</span>
+              <span class="step-card-file">data/preprocessing.py</span>
             </div>
             <p>Nhận ảnh NST đơn trên nền trắng → tách nền bằng border-connected detection → xuất RGBA + mask nhị phân.</p>
             <div class="step-io">
@@ -781,7 +781,7 @@
           <div class="step-card">
             <div class="step-card-header">
               <span class="step-card-title">Sinh Dữ Liệu Tổng Hợp (Synthetic)</span>
-              <span class="step-card-file">3v1_generate_synthetic_masks.py</span>
+              <span class="step-card-file">data/preprocessing.py</span>
             </div>
             <p>Ghép 2 NST đơn thành ảnh chồng nhau có kiểm soát. Mask C = A ∩ B chính xác 100%. Sinh 3000 mẫu.</p>
             <div class="step-io">
@@ -798,7 +798,7 @@
           <div class="step-card">
             <div class="step-card-header">
               <span class="step-card-title">Chuẩn Hóa Về 256×256 Grayscale</span>
-              <span class="step-card-file">4v1_preprocess_to_256.py</span>
+              <span class="step-card-file">utils/image_io.py</span>
             </div>
             <p>Resize giữ tỉ lệ + padding trắng → 256×256. Binarize mask. Mô hình AI yêu cầu kích thước cố định.</p>
             <div class="step-io">
@@ -815,7 +815,7 @@
           <div class="step-card">
             <div class="step-card-header">
               <span class="step-card-title">Chia Tập Train / Val / Test</span>
-              <span class="step-card-file">5v1_split_data.py</span>
+              <span class="step-card-file">pipeline/step01_data_prep.py</span>
             </div>
             <p>Shuffle ngẫu nhiên (seed=42) rồi chia 70% / 15% / 15%. Đảm bảo reproducible mỗi lần chạy.</p>
             <div class="step-io">
@@ -832,7 +832,7 @@
           <div class="step-card" style="border-color:rgba(255,123,114,0.3)">
             <div class="step-card-header">
               <span class="step-card-title" style="color:var(--accent-red)">⭐ Huấn Luyện Mô Hình AI (Bước Trung Tâm)</span>
-              <span class="step-card-file">6v1_unet_model.py</span>
+              <span class="step-card-file">pipeline/step02_trainer.py</span>
             </div>
             <p>Train Teacher (48 filters) → freeze → distill sang Student (24 filters). Tự resume từ checkpoint. Xuất best_for_apply.keras.</p>
             <div class="step-io">
@@ -849,7 +849,7 @@
           <div class="step-card">
             <div class="step-card-header">
               <span class="step-card-title">Predict &amp; Tách A/B từ Ảnh Thật</span>
-              <span class="step-card-file">7v1_predict_real_overlap.py</span>
+              <span class="step-card-file">pipeline/step03_inference.py</span>
             </div>
             <p>Load model → predict mask A/B/C → restore về kích thước gốc → inpainting vùng C → xuất file A.png và B.png.</p>
             <div class="step-io">
@@ -866,7 +866,7 @@
           <div class="step-card">
             <div class="step-card-header">
               <span class="step-card-title">Đánh Giá Định Lượng (Tùy Chọn)</span>
-              <span class="step-card-file">8v1_evaluate_synthetic_test.py</span>
+              <span class="step-card-file">pipeline/step04_evaluator.py</span>
             </div>
             <p>Chạy predict trên dataset/test có ground-truth. Tính Dice, IoU, Pixel Acc. Sinh visualization grid so sánh GT vs Pred.</p>
             <div class="step-io">
@@ -884,62 +884,35 @@
     <section class="section" id="module1">
       <div class="section-header">
         <div class="section-num">1</div>
-        <div class="section-title">1v1_create_folder.py — Khởi Tạo Thư Mục</div>
+        <div class="section-title">pipeline/step01_data_prep.py — Data Prep Controller</div>
       </div>
       <div class="alert alert-info">
-        <strong>Mục đích:</strong> Tạo toàn bộ cây thư mục. Không có logic phức tạp. Chạy một lần duy nhất khi bắt đầu dự án mới.
+        <strong>Mục đích:</strong> Điều phối toàn bộ luồng chuẩn bị dữ liệu (Từ khởi tạo thư mục, tách nền, sinh data, chuẩn hóa 256x256 đến chia train/val/test). Logic nghiệp vụ nằm ở <code>data/preprocessing.py</code> và <code>utils/image_io.py</code>.
       </div>
       <div class="code-container">
         <div class="code-header">
           <div class="code-header-left">
             <span class="code-lang">Python</span>
-            <span class="code-filename">1v1_create_folder.py</span>
+            <span class="code-filename">pipeline/step01_data_prep.py</span>
           </div>
           <button class="copy-btn" onclick="copyCode(this)">📋 Copy</button>
         </div>
         <pre><span class="cm"># ============================================================
-# FILE: 1v1_create_folder.py
-# CHỨC NĂNG: Tạo toàn bộ cây thư mục cho dự án (chạy 1 lần)
+# FILE: pipeline/step01_data_prep.py
+# CHỨC NĂNG: Controller — điều phối Toàn Bộ Luồng Chuẩn Bị Dữ Liệu
 # ============================================================</span>
 
-<span class="kw">from</span> pathlib <span class="kw">import</span> Path
+<span class="kw2">def</span> <span class="fn">run_all</span>():
+    <span class="cm"># Chạy 5 bước chuẩn bị dữ liệu liên tiếp</span>
+    step_1_create_folders()
+    step_2_prepare_single()
+    step_3_generate_synthetic()
+    step_4_preprocess_to_256()
+    step_5_split_data()
+    <span class="fn">print</span>(<span class="str">"🎉 QUÁ TRÌNH CHUẨN BỊ DỮ LIỆU ĐÃ HOÀN TẤT!"</span>)
 
-ROOT = Path(__file__).resolve().parent
-
-<span class="cm"># Danh sách TẤT CẢ thư mục cần thiết trong project</span>
-folders = [
-    <span class="cm"># --- Dữ liệu đầu vào ---</span>
-    <span class="str">"source_data/overlap_raw"</span>,         <span class="cm"># Ảnh NST thật cần phân tích</span>
-    <span class="str">"source_data/single_chromosomes"</span>,   <span class="cm"># Ảnh NST đơn lẻ (đã tách thủ công)</span>
-
-    <span class="cm"># --- Dữ liệu tổng hợp (sinh bởi bước 3) ---</span>
-    <span class="str">"generated_data/images"</span>,
-    <span class="str">"generated_data/masks_A"</span>,
-    <span class="str">"generated_data/masks_B"</span>,
-    <span class="str">"generated_data/masks_C"</span>,
-    <span class="str">"generated_data/previews"</span>,
-
-    <span class="cm"># --- Dataset chia train/val/test ---</span>
-    <span class="str">"dataset/train/images"</span>, <span class="str">"dataset/train/masks_A"</span>,
-    <span class="str">"dataset/train/masks_B"</span>, <span class="str">"dataset/train/masks_C"</span>,
-
-    <span class="str">"dataset/val/images"</span>,   <span class="str">"dataset/val/masks_A"</span>,
-    <span class="str">"dataset/val/masks_B"</span>,   <span class="str">"dataset/val/masks_C"</span>,
-
-    <span class="str">"dataset/test/images"</span>,  <span class="str">"dataset/test/masks_A"</span>,
-    <span class="str">"dataset/test/masks_B"</span>,  <span class="str">"dataset/test/masks_C"</span>,
-
-    <span class="cm"># --- Kết quả ---</span>
-    <span class="str">"results/logs"</span>,
-    <span class="str">"results/predicted_masks"</span>,
-    <span class="str">"results/predicted_contours"</span>,
-    <span class="str">"results/metric_reports"</span>,
-]
-
-<span class="kw">for</span> folder <span class="kw">in</span> folders:
-    (ROOT / folder).mkdir(parents=<span class="kw">True</span>, exist_ok=<span class="kw">True</span>)
-
-<span class="fn">print</span>(<span class="str">"✅ Done creating project folders."</span>)</pre>
+<span class="kw">if</span> __name__ == <span class="str">"__main__"</span>:
+    run_all()</pre>
       </div>
     </section>
 
@@ -947,7 +920,7 @@ folders = [
     <section class="section" id="module2">
       <div class="section-header">
         <div class="section-num">2</div>
-        <div class="section-title">2v1_prepare_single_chromosomes.py — Tách NST Đơn</div>
+        <div class="section-title">data/preprocessing.py — Tách NST Đơn</div>
       </div>
       <div class="alert alert-info">
         <strong>Mục đích:</strong> Tách nhiễm sắc thể ra khỏi nền trắng trong ảnh đơn lẻ, tạo ra ảnh RGBA (nền trong suốt) và mask nhị phân.
@@ -990,7 +963,7 @@ folders = [
         <div class="code-header">
           <div class="code-header-left">
             <span class="code-lang">Python</span>
-            <span class="code-filename">2v1_prepare_single_chromosomes.py — Hàm cốt lõi</span>
+            <span class="code-filename">data/preprocessing.py — Hàm cốt lõi</span>
           </div>
         </div>
         <pre><span class="kw2">def</span> <span class="fn">get_border_background</span>(gray):
@@ -1078,7 +1051,7 @@ folders = [
     <section class="section" id="module3">
       <div class="section-header">
         <div class="section-num">3</div>
-        <div class="section-title">3v1_generate_synthetic_masks.py — Sinh Data Tổng Hợp</div>
+        <div class="section-title">data/preprocessing.py — Sinh Data Tổng Hợp</div>
       </div>
       <div class="alert alert-tip">
         <strong>💡 Tại sao cần Synthetic Data?</strong> Ảnh NST thật (overlap_raw) KHÔNG có ground-truth mask.
@@ -1184,7 +1157,7 @@ folders = [
     <section class="section" id="module4">
       <div class="section-header">
         <div class="section-num">4</div>
-        <div class="section-title">4v1_preprocess_to_256.py — Chuẩn Hóa Ảnh</div>
+        <div class="section-title">utils/image_io.py — Chuẩn Hóa Ảnh</div>
       </div>
       <div class="alert alert-warn">
         <strong>Tại sao dùng PADDING thay vì STRETCH?</strong> Stretch làm méo hình thái NST.
@@ -1238,7 +1211,7 @@ folders = [
     <section class="section" id="module5">
       <div class="section-header">
         <div class="section-num">5</div>
-        <div class="section-title">5v1_split_data.py — Chia Dataset</div>
+        <div class="section-title">pipeline/step01_data_prep.py — Chia Dataset</div>
       </div>
       <div class="info-grid">
         <div class="info-card">
@@ -1263,7 +1236,7 @@ folders = [
     <section class="section" id="module6">
       <div class="section-header">
         <div class="section-num">6</div>
-        <div class="section-title">6v1_unet_model.py — Huấn Luyện AI (File Trung Tâm)</div>
+        <div class="section-title">pipeline/step02_trainer.py — Huấn Luyện AI (File Trung Tâm)</div>
       </div>
       <div class="alert alert-warn">
         <strong>⭐ File quan trọng nhất</strong> (~1340 dòng). Chứa toàn bộ pipeline huấn luyện AI:
@@ -1429,7 +1402,7 @@ CURRENT_DISTILL_LOSS_WEIGHT = tf.Variable(<span class="num">0.35</span>, trainab
     <section class="section" id="module7">
       <div class="section-header">
         <div class="section-num">7</div>
-        <div class="section-title">7v1_predict_real_overlap.py — Predict &amp; Tách A/B</div>
+        <div class="section-title">pipeline/step03_inference.py — Predict &amp; Tách A/B</div>
       </div>
       <div class="alert alert-tip">
         <strong>🎯 Đây là sản phẩm cuối cùng:</strong> Nhận ảnh NST thật → tách thành <code>*_A.png</code> và <code>*_B.png</code>
@@ -1541,7 +1514,7 @@ CURRENT_DISTILL_LOSS_WEIGHT = tf.Variable(<span class="num">0.35</span>, trainab
     <section class="section" id="module8">
       <div class="section-header">
         <div class="section-num">8</div>
-        <div class="section-title">8v1_evaluate_synthetic_test.py — Đánh Giá Model</div>
+        <div class="section-title">pipeline/step04_evaluator.py — Đánh Giá Model</div>
       </div>
       <div class="info-grid">
         <div class="info-card">
@@ -1618,85 +1591,85 @@ CURRENT_DISTILL_LOSS_WEIGHT = tf.Variable(<span class="num">0.35</span>, trainab
           <tbody>
             <tr>
               <td><span class="func-name">build_unet()</span><span class="func-tag tag-core">LÕI</span></td>
-              <td style="color:var(--accent-blue);font-size:12px">6v1_unet_model.py</td>
+              <td style="color:var(--accent-blue);font-size:12px">pipeline/step02_trainer.py</td>
               <td style="color:var(--text-muted)">~420</td>
               <td>Xây toàn bộ model Attention U-Net</td>
             </tr>
             <tr>
               <td><span class="func-name">attention_gate(skip, gating, f)</span><span class="func-tag tag-core">LÕI</span></td>
-              <td style="color:var(--accent-blue);font-size:12px">6v1_unet_model.py</td>
+              <td style="color:var(--accent-blue);font-size:12px">pipeline/step02_trainer.py</td>
               <td style="color:var(--text-muted)">~405</td>
               <td>Cơ chế attention trong decoder</td>
             </tr>
             <tr>
               <td><span class="func-name">student_distill_loss()</span><span class="func-tag tag-core">LÕI</span></td>
-              <td style="color:var(--accent-blue);font-size:12px">6v1_unet_model.py</td>
+              <td style="color:var(--accent-blue);font-size:12px">pipeline/step02_trainer.py</td>
               <td style="color:var(--text-muted)">~470</td>
               <td>Loss: 65% hard + 35% distill MSE</td>
             </tr>
             <tr>
               <td><span class="func-name">make_boundary_channel()</span><span class="func-tag tag-core">LÕI</span></td>
-              <td style="color:var(--accent-blue);font-size:12px">6v1_unet_model.py</td>
+              <td style="color:var(--accent-blue);font-size:12px">pipeline/step02_trainer.py</td>
               <td style="color:var(--text-muted)">~245</td>
               <td>Sinh edge target tự động</td>
             </tr>
             <tr>
               <td><span class="func-name">build_or_resume_role()</span><span class="func-tag tag-core">LÕI</span></td>
-              <td style="color:var(--accent-blue);font-size:12px">6v1_unet_model.py</td>
+              <td style="color:var(--accent-blue);font-size:12px">pipeline/step02_trainer.py</td>
               <td style="color:var(--text-muted)">~610</td>
               <td>Resume / Build model logic</td>
             </tr>
             <tr>
               <td><span class="func-name">choose_fixed_batch_size()</span><span class="func-tag tag-util">HỖ TRỢ</span></td>
-              <td style="color:var(--accent-blue);font-size:12px">6v1_unet_model.py</td>
+              <td style="color:var(--accent-blue);font-size:12px">pipeline/step02_trainer.py</td>
               <td style="color:var(--text-muted)">~319</td>
               <td>Tránh XLA recompile shape lẻ</td>
             </tr>
             <tr>
               <td><span class="func-name">CleanEpochLogger (Callback)</span><span class="func-tag tag-util">HỖ TRỢ</span></td>
-              <td style="color:var(--accent-blue);font-size:12px">6v1_unet_model.py</td>
+              <td style="color:var(--accent-blue);font-size:12px">pipeline/step02_trainer.py</td>
               <td style="color:var(--text-muted)">~780</td>
               <td>Log gọn epoch/batch cho Colab</td>
             </tr>
             <tr>
               <td><span class="func-name">make_realistic_overlap_canvas()</span><span class="func-tag tag-core">LÕI</span></td>
-              <td style="color:var(--accent-purple);font-size:12px">3v1_generate_synthetic_masks.py</td>
+              <td style="color:var(--accent-purple);font-size:12px">data/preprocessing.py</td>
               <td style="color:var(--text-muted)">~320</td>
               <td>Sinh dữ liệu tổng hợp C=A∩B</td>
             </tr>
             <tr>
               <td><span class="func-name">get_border_background(gray)</span><span class="func-tag tag-core">LÕI</span></td>
-              <td style="color:var(--accent-green);font-size:12px">2v1_prepare_single_chromosomes.py</td>
+              <td style="color:var(--accent-green);font-size:12px">data/preprocessing.py</td>
               <td style="color:var(--text-muted)">~100</td>
               <td>Border-connected background detect</td>
             </tr>
             <tr>
               <td><span class="func-name">inpaint_instance(gray, mask, overlap)</span><span class="func-tag tag-core">LÕI</span></td>
-              <td style="color:var(--accent-orange);font-size:12px">7v1_predict_real_overlap.py</td>
+              <td style="color:var(--accent-orange);font-size:12px">pipeline/step03_inference.py</td>
               <td style="color:var(--text-muted)">~290</td>
               <td>TELEA fill vùng bị che</td>
             </tr>
             <tr>
               <td><span class="func-name">save_separated_ab()</span><span class="func-tag tag-output">OUTPUT</span></td>
-              <td style="color:var(--accent-orange);font-size:12px">7v1_predict_real_overlap.py</td>
+              <td style="color:var(--accent-orange);font-size:12px">pipeline/step03_inference.py</td>
               <td style="color:var(--text-muted)">~330</td>
               <td>Sản phẩm cuối: A.png + B.png</td>
             </tr>
             <tr>
               <td><span class="func-name">restore_mask_to_original()</span><span class="func-tag tag-core">LÕI</span></td>
-              <td style="color:var(--accent-orange);font-size:12px">7v1_predict_real_overlap.py</td>
+              <td style="color:var(--accent-orange);font-size:12px">pipeline/step03_inference.py</td>
               <td style="color:var(--text-muted)">~130</td>
               <td>Unpad mask về kích thước gốc</td>
             </tr>
             <tr>
               <td><span class="func-name">resize_with_padding()</span><span class="func-tag tag-util">HỖ TRỢ</span></td>
-              <td style="color:var(--accent-yellow);font-size:12px">4v1_preprocess_to_256.py</td>
+              <td style="color:var(--accent-yellow);font-size:12px">utils/image_io.py</td>
               <td style="color:var(--text-muted)">~55</td>
               <td>Resize + padding chuẩn hóa ảnh</td>
             </tr>
             <tr>
               <td><span class="func-name">evaluate_split(model, ...)</span><span class="func-tag tag-metric">METRIC</span></td>
-              <td style="color:var(--accent-blue);font-size:12px">6v1_unet_model.py</td>
+              <td style="color:var(--accent-blue);font-size:12px">pipeline/step02_trainer.py</td>
               <td style="color:var(--text-muted)">~675</td>
               <td>Đánh giá chính xác bằng NumPy</td>
             </tr>
@@ -1720,7 +1693,7 @@ CURRENT_DISTILL_LOSS_WEIGHT = tf.Variable(<span class="num">0.35</span>, trainab
           <div class="dd-content">
             <div class="dd-title">Dùng Synthetic Data thay vì label thủ công</div>
             <div class="dd-reason">Ảnh NST thật (overlap_raw) KHÔNG có ground-truth mask. Label thủ công cực kỳ tốn thời gian và chủ quan. Synthetic cho mask chính xác 100% và có thể sinh không giới hạn.</div>
-            <div class="dd-file">→ 3v1_generate_synthetic_masks.py</div>
+            <div class="dd-file">→ data/preprocessing.py</div>
           </div>
         </div>
         <div class="dd-item">
@@ -1728,7 +1701,7 @@ CURRENT_DISTILL_LOSS_WEIGHT = tf.Variable(<span class="num">0.35</span>, trainab
           <div class="dd-content">
             <div class="dd-title">Padding thay vì Stretch khi resize về 256</div>
             <div class="dd-reason">Stretch làm méo hình thái NST. Trong karyotype, hình dạng NST (dài, ngắn, cong) là đặc trưng quan trọng để phân loại. Padding trắng khớp với nền tự nhiên.</div>
-            <div class="dd-file">→ 4v1_preprocess_to_256.py, 7v1_predict_real_overlap.py</div>
+            <div class="dd-file">→ utils/image_io.py, pipeline/step03_inference.py</div>
           </div>
         </div>
         <div class="dd-item">
@@ -1736,7 +1709,7 @@ CURRENT_DISTILL_LOSS_WEIGHT = tf.Variable(<span class="num">0.35</span>, trainab
           <div class="dd-content">
             <div class="dd-title">Channel C weight = 3.75 (gấp 3× A và B)</div>
             <div class="dd-reason">Vùng C chiếm diện tích nhỏ hơn A và B. Không có trọng số cao, model sẽ học cách "bỏ qua" C vì ít ảnh hưởng đến loss tổng thể. 3.75 = 3 × 1.25.</div>
-            <div class="dd-file">→ 6v1_unet_model.py: CHANNEL_WEIGHTS</div>
+            <div class="dd-file">→ pipeline/step02_trainer.py: CHANNEL_WEIGHTS</div>
           </div>
         </div>
         <div class="dd-item">
@@ -1744,7 +1717,7 @@ CURRENT_DISTILL_LOSS_WEIGHT = tf.Variable(<span class="num">0.35</span>, trainab
           <div class="dd-content">
             <div class="dd-title">Threshold C = 0.40 (thấp hơn A/B = 0.50)</div>
             <div class="dd-reason">Vùng C nằm ở vùng chồng lấp phức tạp, model thường dự đoán với confidence thấp hơn A/B. Threshold thấp hơn giúp recall C tốt hơn.</div>
-            <div class="dd-file">→ 6v1_unet_model.py, 7v1, 8v1: ABC_METRIC_THRESHOLDS</div>
+            <div class="dd-file">→ pipeline/step02_trainer.py, 7v1, 8v1: ABC_METRIC_THRESHOLDS</div>
           </div>
         </div>
         <div class="dd-item">
@@ -1752,7 +1725,7 @@ CURRENT_DISTILL_LOSS_WEIGHT = tf.Variable(<span class="num">0.35</span>, trainab
           <div class="dd-content">
             <div class="dd-title">Tắt XLA auto-jit (TF_XLA_FLAGS=--tf_xla_auto_jit=0)</div>
             <div class="dd-reason">Epoch đầu trên Colab T4 bị treo 10-30 phút do XLA/cuDNN autotune tìm thuật toán tối ưu cho shape đầu tiên. Tắt đi để bắt đầu train ngay.</div>
-            <div class="dd-file">→ 6v1_unet_model.py: os.environ</div>
+            <div class="dd-file">→ pipeline/step02_trainer.py: os.environ</div>
           </div>
         </div>
         <div class="dd-item">
@@ -1760,7 +1733,7 @@ CURRENT_DISTILL_LOSS_WEIGHT = tf.Variable(<span class="num">0.35</span>, trainab
           <div class="dd-content">
             <div class="dd-title">Fixed batch size chia hết cả train và val</div>
             <div class="dd-reason">Batch shape thay đổi giữa các epoch (batch lẻ cuối dataset) → XLA/cuDNN phải compile lại kernel → chậm đáng kể. choose_fixed_batch_size() tự động tìm batch tối ưu.</div>
-            <div class="dd-file">→ 6v1_unet_model.py: choose_fixed_batch_size()</div>
+            <div class="dd-file">→ pipeline/step02_trainer.py: choose_fixed_batch_size()</div>
           </div>
         </div>
         <div class="dd-item">
@@ -1768,7 +1741,7 @@ CURRENT_DISTILL_LOSS_WEIGHT = tf.Variable(<span class="num">0.35</span>, trainab
           <div class="dd-content">
             <div class="dd-title">Teacher 48 filters, Student 24 filters</div>
             <div class="dd-reason">Teacher cần capacity lớn để học tốt. Student nhẹ hơn để inference nhanh khi deploy. Student "chắt lọc" kiến thức từ Teacher thay vì phải tự học từ đầu.</div>
-            <div class="dd-file">→ 6v1_unet_model.py: TrainConfig</div>
+            <div class="dd-file">→ pipeline/step02_trainer.py: TrainConfig</div>
           </div>
         </div>
         <div class="dd-item">
@@ -1776,7 +1749,7 @@ CURRENT_DISTILL_LOSS_WEIGHT = tf.Variable(<span class="num">0.35</span>, trainab
           <div class="dd-content">
             <div class="dd-title">Distillation: 65% hard label + 35% soft label</div>
             <div class="dd-reason">100% hard = bỏ lợi ích distillation. 100% soft = mất độ chính xác với ground truth. 65/35 cân bằng tốt nhất theo thực nghiệm trên dataset NST.</div>
-            <div class="dd-file">→ 6v1_unet_model.py: student_distill_loss()</div>
+            <div class="dd-file">→ pipeline/step02_trainer.py: student_distill_loss()</div>
           </div>
         </div>
         <div class="dd-item">
@@ -1784,7 +1757,7 @@ CURRENT_DISTILL_LOSS_WEIGHT = tf.Variable(<span class="num">0.35</span>, trainab
           <div class="dd-content">
             <div class="dd-title">Inpainting bằng TELEA thay vì Navier-Stokes</div>
             <div class="dd-reason">NST là ảnh y tế đen trắng với texture đơn giản. TELEA (Fast Marching Method, Telea 2004) cho kết quả mượt và ít artifact hơn Navier-Stokes cho loại texture này.</div>
-            <div class="dd-file">→ 7v1_predict_real_overlap.py: inpaint_instance()</div>
+            <div class="dd-file">→ pipeline/step03_inference.py: inpaint_instance()</div>
           </div>
         </div>
         <div class="dd-item">
@@ -1792,7 +1765,7 @@ CURRENT_DISTILL_LOSS_WEIGHT = tf.Variable(<span class="num">0.35</span>, trainab
           <div class="dd-content">
             <div class="dd-title">Augmentation chỉ dùng Flip, KHÔNG crop/rotate</div>
             <div class="dd-reason">Crop ngẫu nhiên có thể cắt mất phần NST quan trọng. Rotate mạnh làm lệch hướng NST (A nằm ngang / B đứng là đặc trưng quan trọng). Flip H/V an toàn.</div>
-            <div class="dd-file">→ 6v1_unet_model.py: augment_sample()</div>
+            <div class="dd-file">→ pipeline/step02_trainer.py: augment_sample()</div>
           </div>
         </div>
       </div>
@@ -1813,36 +1786,36 @@ CURRENT_DISTILL_LOSS_WEIGHT = tf.Variable(<span class="num">0.35</span>, trainab
 <span class="cmd-comment">#    source_data/overlap_raw/*.png</span>
 <span class="cmd-comment"># 3. Chạy từng bước:</span>
 
-<span class="cmd-prompt">$ </span>python 1v1_create_folder.py
+<span class="cmd-prompt">$ </span>python pipeline/step01_data_prep.py
 <span class="cmd-prompt">$ </span>python 2v1_remove_subfolder.py        <span class="cmd-comment"># Nếu cần dọn subfolder thừa</span>
-<span class="cmd-prompt">$ </span>python 2v1_prepare_single_chromosomes.py
-<span class="cmd-prompt">$ </span>python 3v1_generate_synthetic_masks.py
-<span class="cmd-prompt">$ </span>python 4v1_preprocess_to_256.py
-<span class="cmd-prompt">$ </span>python 5v1_split_data.py
-<span class="cmd-prompt">$ </span>python 6v1_unet_model.py --epochs 200 --batch-size 64 --min-acc 0.85 --auto-retrain-rounds 1
-<span class="cmd-prompt">$ </span>python 7v1_predict_real_overlap.py</div>
+<span class="cmd-prompt">$ </span>python data/preprocessing.py
+<span class="cmd-prompt">$ </span>python data/preprocessing.py
+<span class="cmd-prompt">$ </span>python utils/image_io.py
+<span class="cmd-prompt">$ </span>python pipeline/step01_data_prep.py
+<span class="cmd-prompt">$ </span>python pipeline/step02_trainer.py --epochs 200 --batch-size 64 --min-acc 0.85 --auto-retrain-rounds 1
+<span class="cmd-prompt">$ </span>python pipeline/step03_inference.py</div>
 
       <h3 style="font-size:14px;font-weight:600;color:var(--text-primary);margin:20px 0 8px">📊 Chỉ Đánh Giá (sau khi có model)</h3>
       <div class="cmd-block">
-<span class="cmd-prompt">$ </span>python 8v1_evaluate_synthetic_test.py --split test --visualize 50</div>
+<span class="cmd-prompt">$ </span>python pipeline/step04_evaluator.py --split test --visualize 50</div>
 
       <h3 style="font-size:14px;font-weight:600;color:var(--text-primary);margin:20px 0 8px">🔄 Resume Train (đã có checkpoint)</h3>
       <div class="cmd-block">
 <span class="cmd-comment"># Script tự động resume từ epoch checkpoint mới nhất</span>
-<span class="cmd-prompt">$ </span>python 6v1_unet_model.py --epochs 200
+<span class="cmd-prompt">$ </span>python pipeline/step02_trainer.py --epochs 200
 
 <span class="cmd-comment"># Force train lại từ đầu (xóa checkpoint)</span>
-<span class="cmd-prompt">$ </span>python 6v1_unet_model.py --epochs 200 --force-restart</div>
+<span class="cmd-prompt">$ </span>python pipeline/step02_trainer.py --epochs 200 --force-restart</div>
 
       <h3 style="font-size:14px;font-weight:600;color:var(--text-primary);margin:20px 0 8px">💾 Nếu OOM trên GPU Yếu (T4, 16GB VRAM)</h3>
       <div class="cmd-block">
-<span class="cmd-prompt">$ </span>python 6v1_unet_model.py --epochs 200 --batch-size 32 --min-acc 0.85
+<span class="cmd-prompt">$ </span>python pipeline/step02_trainer.py --epochs 200 --batch-size 32 --min-acc 0.85
 <span class="cmd-comment"># hoặc</span>
-<span class="cmd-prompt">$ </span>python 6v1_unet_model.py --epochs 200 --batch-size 16 --min-acc 0.85</div>
+<span class="cmd-prompt">$ </span>python pipeline/step02_trainer.py --epochs 200 --batch-size 16 --min-acc 0.85</div>
 
       <h3 style="font-size:14px;font-weight:600;color:var(--text-primary);margin:20px 0 8px">🎨 Output Nền Trắng (thay vì trong suốt)</h3>
       <div class="cmd-block">
-<span class="cmd-prompt">$ </span>python 7v1_predict_real_overlap.py --white-background</div>
+<span class="cmd-prompt">$ </span>python pipeline/step03_inference.py --white-background</div>
 
       <div class="alert alert-warn" style="margin-top:20px">
         <strong>⚠️ Ghi chú bảo trì:</strong>
