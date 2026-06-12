@@ -21,3 +21,7 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 managed = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["core", "pipeline", "config"]
+py-modules = ["main"]
