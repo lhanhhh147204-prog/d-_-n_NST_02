@@ -7,9 +7,14 @@ requires-python = ">=3.9"
 dependencies = [
     "tensorflow>=2.10.0",
     "opencv-python>=4.8.0",
+    "opencv-contrib-python>=4.8.0",
     "Pillow>=10.0.0",
     "numpy>=1.23.0",
-    "tqdm>=4.66.0"
+    "tqdm>=4.66.0",
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "scipy>=1.10.0",
+    "timm>=0.9.0",
 ]
 
 [project.scripts]
@@ -23,5 +28,5 @@ build-backend = "hatchling.build"
 managed = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["core", "pipeline", "config"]
+packages = ["core", "pipeline", "config", "morphology", "pairing", "karyogram", "data", "utils", "training"]
 py-modules = ["main"]

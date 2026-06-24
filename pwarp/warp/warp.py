@@ -1,0 +1,471 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, cast
+
+import cv2
+import numpy as np
+
+from pwarp.core import dtype, ops
+from pwarp.core.arap import StepOne, StepTwo
+from pwarp.warp import affine
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from pwarp.core.precompute import ArapPrecompute
+
+__all__ = (
+    "graph_defined_warp",
+    "graph_warp",
+)
+
+
+@dataclass
+class _FactorCache:
+    matrix: np.ndarray
+    cholesky: np.ndarray  # cholesky factor of (a.T @ a)
+
+
+def _cap_cache(d: dict, max_items: int = 32) -> None:
+    """Keep cache in maintanable size.
+
+    Keep cache size bounded to avoid unbounded growth when control sets change.
+    Pops the oldest inserted items first (dict preserves insertion order in Py 3.7+).
+    """
+    while len(d) > max_items:
+        d.pop(next(iter(d)))
+
+
+_step1_cache: dict[tuple[int, float], _FactorCache] = {}
+_step2_cache: dict[tuple[int, float], _FactorCache] = {}
+
+
+def _chol_ata(a: np.ndarray) -> np.ndarray:
+    """Cholesky of (A.T @ A + eps * I).
+
+    When constraints are weak (e.g. a single control point), A.T @ A can be
+    singular or numerically indefinite. We add adaptive diagonal damping until
+    the matrix becomes positive definite.
+    """
+    ata = a.T @ a
+
+    # Scale-aware starting epsilon
+    # (trace / n) is a decent scale estimate; keep it nonzero.
+    n = ata.shape[0]
+    scale = float(np.trace(ata)) / float(n) if n > 0 else 1.0
+    if not np.isfinite(scale) or scale <= 0.0:
+        scale = 1.0
+
+    eps = dtype.FLOAT(1e-12 * scale)
+    eye = np.eye(n, dtype=ata.dtype)
+
+    for _ in range(8):  # 8 rounds is enough (1e-12 -> 1e-4 scale)
+        try:
+            return np.linalg.cholesky(ata + eps * eye)
+        except np.linalg.LinAlgError:
+            eps = dtype.FLOAT(eps * 10.0)
+
+    # If we still fail, propagate - caller can fall back to lstsq.
+    msg = "Matrix is not positive definite even after damping"
+    raise np.linalg.LinAlgError(msg)
+
+
+def _broadcast_transformed_tri(
+        dst: np.ndarray,
+        bbox: tuple[int, int, int, int] | np.ndarray,
+        warped: np.ndarray,
+        mask: np.ndarray,
+) -> np.ndarray:
+    """Broadcast triangle transformed within bounding box in affine manner.
+
+    Broadcast triangle transformed within bounding box in affine manner
+    into destination image of shape of original image.
+
+    :param dst: np.ndarray;
+    :param bbox: tuple[int, int, int, int]; (top_left_x, top_left_y, width, height)
+    :param warped: np.ndarray;
+    :param mask: np.ndarray;
+    :return: np.ndarray;
+    """
+    # Copy triangular region of the rectangular patch to the output image.
+    mask = ((1.0, 1.0, 1.0) - mask)
+    dst[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]] = \
+        dst[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]] * mask
+
+    dst[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]] = \
+        dst[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]] + warped
+    return dst
+
+
+def inbox_tri_warp(
+        src: np.ndarray,
+        tri_src: np.ndarray,
+        tri_dst: np.ndarray,
+        *,
+        use_scikit: bool = True,
+) -> tuple[np.ndarray, np.ndarray, tuple[int, int, int, int]]:
+    """Find affine transformation.
+
+    Based on src triangle and dst trianglle in 2D will find affine transformation and return this
+    transformation in bounding box of destination triangle.
+
+    :param src: np.ndarray;
+    :param tri_src: np.ndarray;
+    :param tri_dst: np.ndarray;
+    :param use_scikit: bool;
+    :return: tuple[np.ndarray, np.ndarray, tuple[int, int, int, int]];
+    """
+    # Find bounding rectangle for each triangle in form (x, y, width, height).
+    bbox_src = cast(tuple[int, int, int, int], cv2.boundingRect(tri_src))  # noqa: TC006
+    bbox_dst = cast(tuple[int, int, int, int], cv2.boundingRect(tri_dst))  # noqa: TC006
+
+    # Offset points by left top corner of the respective rectangles.
+    tri_src_cropped = tri_src[0, :, :] - np.array(bbox_src[:2], dtype=tri_src.dtype)
+    tri_dst_cropped = tri_dst[0, :, :] - np.array(bbox_dst[:2], dtype=tri_dst.dtype)
+
+    # Crop input image.
+    src_cropped = src[bbox_src[1]:bbox_src[1] + bbox_src[3], bbox_src[0]:bbox_src[0] + bbox_src[2]]
+
+    # Given a pair of triangles, find the affine transform.
+    if use_scikit:
+        # Scikit based warp requires inverse approach to source/destination points.
+        scikit_warp_matrix = affine.affine_transformation(tri_dst_cropped, tri_src_cropped)
+        dst_cropped = affine.warp(
+            src_cropped,
+            scikit_warp_matrix,
+            mode="edge",
+            output_shape=(bbox_dst[3], bbox_dst[2]),
+        )
+        dst_cropped = np.asarray(dst_cropped)
+    else:
+        cv2_warp_matrix = affine.affine_transformation(tri_src_cropped, tri_dst_cropped)[:2, :]
+        # Apply the Affine Transform  to the src image.
+        _kwargs = {"flags": cv2.INTER_LINEAR, "borderMode": cv2.BORDER_REFLECT101}
+        dst_cropped = cv2.warpAffine(src_cropped, cv2_warp_matrix, (bbox_dst[2], bbox_dst[3]), None, **_kwargs)
+        dst_cropped = np.asarray(dst_cropped)
+
+    # Get mask by filling triangle.
+    mask = np.zeros((bbox_dst[3], bbox_dst[2], 3), dtype=dtype.UINT8)
+    cv2.fillConvexPoly(mask, dtype.INT32(tri_dst_cropped), (1, 1, 1), 16, 0)
+    dst_cropped *= mask
+
+    # Ensure bbox is exactly the declared return type.
+    bbox_dst_typed: tuple[int, int, int, int] = (int(bbox_dst[0]), int(bbox_dst[1]), int(bbox_dst[2]), int(bbox_dst[3]))
+
+    return dst_cropped, mask, bbox_dst_typed
+
+
+def tri_warp(
+        src: np.ndarray,
+        tri_src: np.ndarray,
+        tri_dst: np.ndarray,
+        *,
+        use_scikit: bool = True,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Find affine transformation.
+
+    Based on src triangle and dst trianglle in 2D will find affine transformation
+    and returns transformed image from src image in area of dst triangle as well
+    as boolean mask which defines this triangle location.
+
+    :param src: np.ndarray;
+    :param tri_src: np.ndarray;
+    :param tri_dst: np.ndarray;
+    :param use_scikit: bool;
+    :return: np.ndarray; (transformed image within triangle, boolean mask for triangle visibility only)
+    """
+    dst_cropped, mask, bbox_dst = inbox_tri_warp(src, tri_src, tri_dst, use_scikit=use_scikit)
+    alpha = np.zeros(src.shape[:2], dtype=dtype.BOOL)
+    alpha[bbox_dst[1]:bbox_dst[1] + bbox_dst[3], bbox_dst[0]:bbox_dst[0] + bbox_dst[2]] = mask[:, :, 0]
+
+    # Prepare destination array,
+    # Output image is set to white
+    dst = np.ones(src.shape, dtype=dtype.UINT8) * 255
+    # Broadcast pixels within base image.
+    dst = _broadcast_transformed_tri(dst, bbox_dst, dst_cropped, mask)
+    return dst, alpha
+
+
+def merge_transformed(
+        parts: Iterable[tuple[np.ndarray, np.ndarray]],
+        width: dtype.INT | int,
+        height: dtype.INT | int,
+        channels: dtype.INT | int = 3,
+        base_image: np.ndarray = None,
+) -> np.ndarray:
+    """Merge together pieces of images defined by image and its mask.
+
+    Mask is expected to be a boolean type np.ndarray and image 3 channels
+    cv2 like image.
+
+    :param parts: Iterable[tuple[np.ndarray, np.ndarray]];
+    :param width: int;
+    :param height: int;
+    :param channels: int;
+    :param base_image: np.ndarray;
+    :return: np.ndarray;
+    """
+    if base_image is None:
+        base_image = np.ones((height, width, channels), dtype=np.uint8) * 255
+    for image, alpha in parts:
+        base_image[alpha, :] = image[alpha, :]
+    return base_image
+
+
+def _get_solid_background(
+        width: int,
+        height: int,
+        bg_fill: int | tuple[int, int, int] | list[int],
+) -> np.ndarray:
+    if isinstance(bg_fill, int):
+        bg_fill = (bg_fill, bg_fill, bg_fill)
+    # Assuming input data as RGB (not BGR), thus invert order to fulfill cv2 order.
+    bg_fill = np.array([*bg_fill][:3][::-1], dtype=dtype.UINT8)
+    return np.ones((height, width, 3), dtype=dtype.UINT8) * bg_fill
+
+
+def _crop_to_origin(
+        image: np.ndarray,
+        bbox: tuple[int, int, int, int],
+        origin_w: int | dtype.INT,
+        origin_h: int | dtype.INT,
+        bg_fill: int | tuple[int, int, int] | list[int] = 255,
+) -> np.ndarray:
+    """Crop to origin.
+
+    Some traget vertices of transformed mesh might be outside of original image boundaries.
+    To avoid invalid behaviour, affine transformation of each triangle is running on enlarged image.
+    The enlargement is done by bounding box of vertices. (In case transformation mesh is smaller,
+    then bounding box is smaller as well). In this function, enlarged (shrinked in case of smaller mesh)
+    has to be broadcasted (cropped) to original image size.
+
+    :param image: np.ndarray;
+    :param origin_w: Union[int, dtype.INT];
+    :param origin_h: Union[int, dtype.INT];
+    :param bg_fill: Union[int, tuple[int, int, int], list[int]];
+    :return: np.ndarray;
+    """
+    dx, dy, bbox_w, bbox_h = bbox
+    # Create base image with defined background color.
+    base_image = _get_solid_background(origin_w, origin_h, bg_fill)
+    slicer = np.zeros((2, 4), dtype=dtype.INT32)
+    deltas, shape, bbox_shape = (dx, dy), (origin_w, origin_h), (bbox_w, bbox_h)
+
+    for idx, meta in enumerate(zip(deltas, shape, bbox_shape, strict=False)):
+        delta, origin_s, bbox_s = meta
+
+        xrange = min([origin_s - 1, bbox_s])
+        if delta < 0:
+            # If top left corner of graph is left/top from original image.
+            src_from, dst_from = abs(delta), 0
+
+            # If top/left of graph is out of the original image range, then if right side of graph is within image
+            # we need to truncate destination broadcast to the end of graph.
+            # As show bellow, we need to broadcast from x to y, so we ahve to truncate (|x,y| = xrange)
+            #
+            #                img B (original)
+            #   img A     ,------------
+            #   ----------x---y       |
+            #   |         |   |       |
+            #   --------------'       |
+            #             '------------
+            #
+            if bbox_s + delta < origin_s:
+                xrange = bbox_s + delta
+        else:
+            src_from, dst_from = 0, delta
+
+        src_to, dst_to = src_from + xrange, dst_from + xrange
+
+        # If slice destination slice is out of range of original image shape.
+        # We have to solve case when destination slice is to position `y'`, hence we have to
+        # truncate `destination to` and `source_to` coordinates up to `y`.
+        #        B
+        # [0,0] ------------,  A
+        #      |       x---y--y'
+        #      |       |   |  |
+        #      |       --------
+        #       ------------`
+        #
+        if dst_to > origin_s:
+            dst_to -= (abs(origin_s - dst_to) + 1)
+        if abs(dst_from - dst_to) < abs(src_from - src_to):
+            src_to -= abs(abs(dst_from - dst_to) - abs(src_from - src_to))
+
+        slicer[idx, :] = [src_from, src_to, dst_from, dst_to]
+
+    base_image[slicer[1][2]: slicer[1][3], slicer[0][2]: slicer[0][3]] = \
+        image[slicer[1][0]: slicer[1][1], slicer[0][0]: slicer[0][1]]
+    return base_image
+
+
+def graph_defined_warp(
+        image: np.ndarray,
+        vertices_src: np.ndarray,
+        faces_src: np.ndarray,
+        vertices_dst: np.ndarray,
+        faces_dst: np.ndarray,
+        *,
+        use_scikit: dtype.BOOL | bool = False,
+        bg_fill: int | tuple[int, int, int] | list[int] = 255,
+) -> np.ndarray:
+    """Based on triangulated shape transformed from source to destination mesh will provide transformation of image.
+
+    The idea is to do an affine transformation
+    of each triangle in mesh. The affine transformation is definde for each triangle
+    separately and partial results are merged at the end of the process.
+
+    :param image: np.ndarray; image
+    :param vertices_src: np.ndarray;
+    :param faces_src: np.ndarray;
+    :param vertices_dst: np.ndarray;
+    :param faces_dst: np.ndarray;
+    :param use_scikit: bool;
+    :param bg_fill: Union[int, tuple[int], list[int]];
+    :return: np.ndarray;
+    """
+    # Create white image of shape of vertices bonding box.
+    # This is necessary to handle warps formed by vertices when some
+    # of them might be out of the boundaries of original image.
+    height, width = image.shape[:2]
+    dx, dy, bbox_w, bbox_h = cv2.boundingRect(vertices_dst)
+
+    # If entire graph is out of the box.
+    if (dx >= width or dy >= height) or (dx < -bbox_w or dy < -bbox_h):
+        return _get_solid_background(width, height, bg_fill)
+
+    bbox_base_image = _get_solid_background(bbox_w, bbox_h, bg_fill)
+
+    # Iterate over all faces.
+    for f_src, f_dst in zip(faces_src, faces_dst, strict=False):
+        # Choose corresponding vertices defined by faces.
+        r_src, r_dst = vertices_src[f_src], vertices_dst[f_dst]
+        r_src, r_dst = np.array([r_src], dtype=r_src.dtype), np.array([r_dst], dtype=r_dst.dtype)
+        # Transform given triangles pair in affine manner.
+        warped, alpha, bbox = inbox_tri_warp(image, r_src, r_dst, use_scikit=use_scikit)
+        # Adjust bounding box to match position within bbox base image.
+        bbox = np.asarray(bbox, dtype=dtype.INT32)
+        bbox[:2] -= [dx, dy]
+
+        # Put transformed data within base image based on alpha mask and bounding box of given destination face.
+        # Copy triangular region of the rectangular patch to the output image.
+        bbox_base_image = _broadcast_transformed_tri(bbox_base_image, bbox, warped, alpha)
+
+    # Broadcast proper part of transformed bbox image to iamge of original shape.
+    return _crop_to_origin(bbox_base_image, (dx, dy, bbox_w, bbox_h), width, height, bg_fill)
+
+
+def graph_warp(  # noqa: PLR0915
+        vertices: np.ndarray,
+        faces: np.ndarray,
+        control_indices: np.ndarray,
+        shifted_locations: np.ndarray,
+        edges: np.ndarray = None,
+        precomputed: ArapPrecompute = None,
+) -> np.ndarray:
+    """Transform in ARAP manner graph defined by faces and vertices.
+
+    The given graph will be transformed
+    based on location of defined by shifted_locations. New location defined by shifted_locations
+    correspond to original vertices via variable control_indices.
+
+    Example::
+
+        control_indices = np.array([22, 50, 94, 106], dtype=int)
+        shifted_locations = np.array(
+            [[0.555, -0.905],
+             [-0.965, -0.875],
+             [-0.950, 0.460],
+             [0.705, 0.285]], dtype=float
+        )
+
+    :param vertices: np.ndarray; vertices
+    :param faces: np.ndarray; faces
+    :param control_indices: np.ndarray; indices of vertices in graph selected for transformation
+    :param shifted_locations: np.ndarray; new location of control vertices
+    :param edges: np.ndarray; set of edges defined by faces or None
+    :param precomputed: tuple[np.ndarray, np.ndarray, np.ndarray]; [gi, g_product, h] or None
+    :return: np.ndarray; transformed vertices
+    """
+    if edges is None:
+        edges = ops.get_edges(len(faces), faces)
+
+    if precomputed is None:
+        # Compute transformation matrices in case when not supplied.
+        gi, g_product = StepOne.compute_g_matrix(vertices, edges, faces)
+        h = StepOne.compute_h_matrix(edges, g_product, gi, vertices)
+    else:
+        edges = precomputed.edges
+        gi = precomputed.gi
+        g_product = precomputed.g_product
+        h = precomputed.h
+
+    # Normalize inputs for stable caching keys.
+    control_indices = np.asarray(control_indices, dtype=int)
+    shifted_locations = np.asarray(shifted_locations, dtype=dtype.FLOAT)
+
+    # Weight is implicit in your current StepOne/Two defaults.
+    # If you later expose weight in graph_warp signature, use it here and in the key.
+    weight = dtype.FLOAT(1000.0)
+
+    control_key = hash(control_indices.tobytes())
+    cache_key = (control_key, float(weight))
+
+    # -------- Step 1 (v') --------
+    # Use cached factorization if available.
+    step1_cached = _step1_cache.get(cache_key)
+
+    # If your refactor added builders, prefer them for fast path:
+    a1_maker = getattr(StepOne, "build_a_matrix", None)
+    b1_maker = getattr(StepOne, "build_b_vector", None)
+
+    if a1_maker is not None and b1_maker is not None:
+        if step1_cached is None:
+            a1_matrix = a1_maker(edges, vertices, gi, h, control_indices, weight=weight)
+            l1_factor = _chol_ata(a1_matrix)
+            step1_cached = _FactorCache(matrix=a1_matrix, cholesky=l1_factor)
+            _step1_cache[cache_key] = step1_cached
+            _cap_cache(_step1_cache, max_items=32)
+
+        b1_vector = b1_maker(edges, control_indices, shifted_locations, weight=weight)
+
+        atb_1 = step1_cached.matrix.T @ b1_vector
+        y_1 = np.linalg.solve(step1_cached.cholesky, atb_1)
+        v_1 = np.linalg.solve(step1_cached.cholesky.T, y_1)
+
+        v_prime = np.zeros((np.size(vertices, axis=0), 2), dtype=dtype.FLOAT)
+        v_prime[:, 0] = v_1[0::2, 0]
+        v_prime[:, 1] = v_1[1::2, 0]
+    else:
+        # Fallback to original implementation if builders are not present.
+        args = edges, vertices, gi, h, control_indices, shifted_locations
+        v_prime, _, _ = StepOne.compute_v_prime(*args)
+
+    # -------- Step 2 (v'') --------
+    t_matrix = StepTwo.compute_t_matrix(edges, g_product, gi, v_prime)
+
+    step2_cached = _step2_cache.get(cache_key)
+
+    a2_maker = getattr(StepTwo, "build_a2_matrix", None)
+    b2_maker = getattr(StepTwo, "build_b2_vector", None)
+
+    if a2_maker is not None and b2_maker is not None:
+        if step2_cached is None:
+            a2_matrix = a2_maker(edges, vertices, control_indices, weight=weight)
+            l2_factor = _chol_ata(a2_matrix)
+            step2_cached = _FactorCache(matrix=a2_matrix, cholesky=l2_factor)
+            _step2_cache[cache_key] = step2_cached
+            _cap_cache(_step2_cache, max_items=32)
+
+        b2_vector = b2_maker(edges, vertices, t_matrix, control_indices, shifted_locations, weight=weight)
+
+        atb_2 = step2_cached.matrix.T @ b2_vector
+        y_2 = np.linalg.solve(step2_cached.cholesky, atb_2)
+        v_2 = np.linalg.solve(step2_cached.cholesky.T, y_2)
+        new_vertices = v_2
+    else:
+        # Fallback to original implementation if builders are not present.
+        new_vertices = StepTwo.compute_v_2prime(edges, vertices, t_matrix, control_indices, shifted_locations)
+
+    return new_vertices
