@@ -1,38 +1,112 @@
-# Dự Án Phân Tích Hình Thái Nhiễm Sắc Thể (Medical Karyotyping Pipeline)
+# 🧬 Dự Án Phân Tích Hình Thái Nhiễm Sắc Thể (Medical Karyotyping Pipeline)
 
-Dự án này là một quy trình hoàn chỉnh (End-to-End Pipeline) tự động hoá việc phân tích hình ảnh Nhiễm Sắc Thể (NST) y khoa. Từ một bức ảnh thô chụp dưới kính hiển vi, hệ thống sử dụng các thuật toán xử lý ảnh số và Trí Tuệ Nhân Tạo (Deep Learning) để tự động trích xuất, tách cụm, duỗi thẳng, phân loại và sắp xếp chúng thành một bản đồ Karyogram chuẩn y khoa (gồm 23 cặp NST).
+Dự án này là một quy trình hoàn chỉnh (End-to-End Pipeline) nhằm tự động hoá việc phân tích hình ảnh Nhiễm Sắc Thể (NST) y khoa. Bắt đầu từ một bức ảnh thô chụp dưới kính hiển vi, hệ thống sử dụng các thuật toán xử lý ảnh số và Trí Tuệ Nhân Tạo (Deep Learning) để tự động trích xuất, tách cụm, duỗi thẳng, phân loại và sắp xếp chúng thành một bản đồ Karyogram chuẩn y khoa (gồm 23 cặp NST).
 
-## 🚀 Các Tính Năng Cốt Lõi (8 Bước Tự Động)
+## 🚀 Các Tính Năng Cốt Lõi & Pipeline 5 Bước
 
-1. **Tiền xử lý & Làm nét (Deblurring):** Áp dụng Unsharp Masking và CLAHE để làm rõ vân sọc G-banding trên NST.
-2. **Trích xuất cụm NST (Segmentation):** Áp dụng Thresholding và Morphology để bóc tách các NST ra khỏi nền tối.
-3. **Xử lý cụm chạm/chồng (Separation):** Phát hiện các cụm có từ 2 NST trở lên dính nhau (Touching/Overlapping). Sử dụng thuật toán cắt điểm lõm hình học (Geometric Concavity) và mạng U-Net để tách rời.
-4. **Duỗi thẳng (Straightening):** Xoay và làm thẳng các NST bị cong vẹo để chuẩn hóa hình thái.
-5. **Phân loại bằng AI (Classification):** Sử dụng mô hình Swin Transformer phân loại NST thành 24 lớp (Từ 1 đến 22, X, Y).
-6. **Xác định giới tính (Sex Determination):** Đếm số lượng NST X/Y để kết luận giới tính mẫu (XX hoặc XY).
-7. **Ghép cặp (Pairing):** Phân bổ 46 NST vào đúng 23 cặp dựa trên Thuật toán Hungarian và độ tự tin của AI.
-8. **Vẽ Karyogram (Visualization):** Trình bày NST lên lưới chuẩn y khoa 4 hàng, xuất ra file báo cáo cuối cùng.
+Dự án được cấu thành từ 5 bước (Pipeline) xử lý cốt lõi, tuân thủ nghiêm ngặt nguyên tắc **không làm biến dạng cấu trúc sinh học** của Nhiễm Sắc Thể.
 
-## 📂 Cấu Trúc Thư Mục
+### 1. Bước 1: Tăng cường ảnh, giảm mờ (Deblurring)
+- **Mục đích:** Làm rõ vân sọc G-banding trên NST, tiền xử lý để thuật toán dễ dàng nhận diện cấu trúc.
+- **Phương pháp:** Áp dụng mô hình mạng **MPRNet** (thông qua class `Deblurrer`) để khử mờ hình ảnh từ weights tải trước. Đồng thời đánh giá chất lượng đầu ra qua SSIM và Delta E. Các thuật toán truyền thống như Unsharp Masking và CLAHE cũng có thể được áp dụng bổ trợ.
+
+### 2. Bước 2: Tách từng cụm nhiễm sắc thể bên trong ảnh (Segmentation)
+- **Phân loại (Classification):** Sử dụng các mô hình AI:
+  - **CCINet:** Sử dụng kiến trúc SEResNet61Backbone để phân loại 4 lớp.
+  - **DualBranchModel:** Mô hình lai (Hybrid) kết hợp giữa FasterRCNN_ResNet50_FPN_V2 và Swin_T (Swin Transformer) với cơ chế Attention Fusion, xử lý đầu vào 1 kênh màu.
+- **Tách cụm (Clustering):** Sử dụng `PixelDensityHeatmap` và Gaussian Blur để dò tìm vùng mật độ pixel cao, tạo mask định vị (mask màu đỏ), cắt bounding box, và padding đưa ảnh về nền trắng chuẩn (kích thước 128x128 hoặc 224x224) nhưng hoàn toàn **giữ nguyên tỷ lệ sinh học**.
+
+### 3. Bước 3: Xử lý các cụm chạm, chồng, chồng chạm (Core Resolution)
+*Đây là bước xử lý cốt lõi và phức tạp nhất, dùng để tách các NST bị dính vào nhau (Overlapping/Touching).*
+- **Phân tích hình học (Geometric Concavity):**
+  - Dùng `find_concave_points` để tìm các điểm lõm trên đường viền ngoài (contour) của cụm NST.
+  - Dùng `find_best_cutting_points` chọn ra các cặp điểm lõm tối ưu nhất để chia cắt.
+  - Dùng `compute_separation_path` tính toán đường phân tách đi qua vùng có mật độ điểm ảnh thấp nhất giữa các nhánh.
+- **Bóc tách mượt mà (Smooth Separation):** 
+  - Không cắt thô bạo (hard cut). Thay vào đó, sử dụng Distance Transform (`cv2.distanceTransform`) trên cut_mask để tạo ra **Gradient Mask**.
+  - Áp dụng **Alpha Blending** với Gradient Mask để quá trình tách hai phần mượt mà, không gãy gắt ở biên. Kết hợp inpaint (như TELEA) để tái tạo phần di truyền bị che khuất.
+  - Hai phần NST sau đó được tách riêng, chuẩn hóa và đặt vào giữa nền trắng 224x224.
+
+### 4. Bước 4: Duỗi thẳng nhiễm sắc thể (Straightening/Unbending)
+- **Xử lý hình thái uốn cong (Bent):**
+  - Trích xuất khung xương (Skeletonization) thông qua `extract_skeleton` để tìm trục trung tâm.
+  - Dựa trên trục này, hệ thống sẽ tính toán góc độ cong và tiến hành duỗi thẳng (Unbending) mà **không làm thay đổi độ dày mỏng hay kích thước hạt/gai** của NST.
+
+### 5. Bước 5: Phân loại định danh (Karyotyping/Final Classification)
+- Phân loại bằng **Swin Transformer** (SwinKaryotype) cho 24 lớp bao gồm từ NST số 1 đến 22, và NST giới tính X, Y.
+- **Xác định giới tính:** Đếm số lượng NST X/Y để kết luận giới tính mẫu (XX hoặc XY).
+- **Ghép cặp (Pairing):** Phân bổ 46 NST vào 23 cặp dựa trên Thuật toán Hungarian kết hợp độ tự tin của AI.
+- **Vẽ Karyogram (Visualization):** Trình bày NST lên lưới chuẩn y khoa, xuất ra file báo cáo cuối cùng.
+
+---
+
+## 📂 Cấu Trúc Thư Mục Chi Tiết
 
 ```text
-NST_new/
-├── ai_training/          # Mã nguồn huấn luyện các mô hình AI (CCINet, U-Net, SwinKaryotype)
-├── config/               # Chứa các tham số cấu hình hệ thống
-├── medical_pipeline/     # Lõi xử lý chính của dự án (Pipeline 8 bước)
-│   ├── enhancement/      # Tiền xử lý, khử nhiễu, làm nét
-│   ├── segmentation/     # Bóc tách và tìm cụm
-│   ├── morphology/       # Hình thái học, thuật toán cắt điểm lõm, tìm tâm
-│   ├── karyogram/        # Vẽ đồ thị Karyogram
-│   └── pipeline/         # Nơi nối ghép các bước tuần tự (buoc1 -> buoc8)
-├── models/               # Các file định nghĩa kiến trúc Deep Learning
-├── pwarp/                # Module warp/xoay ảnh NST chuyên dụng
-├── utils/                # Các hàm hỗ trợ chung (File I/O, Logging)
+c:\Users\lehoa\dự_án_NTS/
+├── code_refactored/      # Cấu trúc mã nguồn đã được tối ưu hóa
+│   ├── config/           # Các tham số cấu hình (settings.py)
+│   ├── medical_pipeline/ # Lõi xử lý chính của dự án
+│   │   ├── pipeline/     # Nơi nối ghép tuần tự 5 bước xử lý
+│   │   └── ...           
+├── data/                 # Dữ liệu dự án, ảnh raw, ảnh đã tiền xử lý
+├── karyotype_voc_massive/# Dataset lớn chuẩn VOC phục vụ cho bài toán Karyotyping
+├── nst_tach_models_logs_checkpoints/ # Nơi lưu trữ models (.pth, .keras), logs và checkpoints của quá trình huấn luyện
+├── .env                  # Cấu hình biến môi trường cục bộ
+├── .gitignore            # Khai báo file bị loại bỏ khỏi quản lý phiên bản
 ├── main.py               # File chạy chính của toàn bộ dự án
-└── project_notebook.ipynb # Notebook nghiên cứu gốc (Dùng làm tham khảo)
+├── pyproject.toml        # Quản lý dependencies và meta-data dự án (uv / poetry)
+├── uv.lock               # Lock dependencies phiên bản chính xác
+└── AI_RULES.md           # Bộ quy tắc quản lý cho các Agent/Developer tham gia dự án
 ```
 
-### 3. Huấn luyện mô hình AI (Dành cho Developer)
-- Huấn luyện U-Net (Tách cụm chồng): `uv run train_dual_branch.py`
-- Huấn luyện SwinKaryotype (Phân loại): `uv run train_karyotype.py`
+---
 
+## 🛠️ Hướng Dẫn Cài Đặt & Chạy Dự Án
+
+### 1. Yêu cầu hệ thống
+- **Ngôn ngữ:** Python 3.12+
+- **Thư viện chính:** TensorFlow, Keras, PyTorch, torchvision, timm (Swin-T), OpenCV (cv2), numpy, scipy.
+- Khuyến nghị sử dụng **uv** hoặc **pip** để quản lý môi trường ảo.
+
+### 2. Cài đặt Dependencies
+Bạn có thể cài đặt thông qua `uv` (công cụ quản lý Python tốc độ cao):
+```bash
+# Cài đặt uv nếu chưa có
+pip install uv
+
+# Đồng bộ dependencies
+uv sync
+```
+
+Hoặc qua `requirements.txt` (nếu có):
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Thực thi Pipeline
+Chạy toàn bộ pipeline trên một ảnh hoặc một bộ dữ liệu thông qua file `main.py`:
+```bash
+uv run main.py
+```
+*(Tham số cấu hình cụ thể có thể tuỳ chỉnh tại `code_refactored/config/settings.py`)*
+
+### 4. Huấn luyện mô hình (Dành cho Developer/Researcher)
+Dự án cung cấp kịch bản huấn luyện riêng biệt cho các tác vụ khác nhau:
+- **Huấn luyện mô hình bóc tách (U-Net/Dual Branch):**
+  ```bash
+  uv run train_dual_branch.py
+  ```
+- **Huấn luyện mô hình phân loại Karyotype (Swin Transformer):**
+  ```bash
+  uv run train_karyotype.py
+  ```
+
+---
+
+## ⚠️ Những Lưu Ý Quan Trọng (Dành Cho Đóng Góp Code)
+
+1. **Tuân thủ Nguyên Tắc Sinh Học:** Bất kỳ chỉnh sửa nào trong module Morphology (tiền xử lý ảnh) đều KHÔNG được phép làm biến dạng NST (thay đổi độ dày, làm mất cấu trúc hạt/gai).
+2. **Xử Lý Chồng Chạm:** Không được dùng các phép cắt cứng (hard cut) làm đứt gãy NST. Bắt buộc phải sử dụng **Alpha Blending với Gradient Mask**.
+3. **Tránh Lỗi Khởi Tạo Mô Hình Nặng:** Khi thiết kế suy luận (inference), cần nạp model một lần duy nhất (Singleton Pattern) vào bộ nhớ. Tránh việc tải `torch.load` bên trong các vòng lặp gây tràn RAM.
+4. **Không Dùng Đường Dẫn Cứng (Hardcoded Paths):** Sử dụng biến môi trường (qua `.env`) hoặc đường dẫn tương đối để dễ dàng triển khai trên môi trường khác biệt.

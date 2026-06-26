@@ -12,12 +12,9 @@ prepared_single_chromosomes/
 generated_data/
 processed_data_256/
 dataset/
-data/
-karyotype_voc_massive/
 
 # Kết quả và Model checkpoints
 results/
-nst_tach_models_logs_checkpoints/
 *.keras
 *.h5
 *.pth
