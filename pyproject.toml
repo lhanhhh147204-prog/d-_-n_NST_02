@@ -29,5 +29,12 @@ build-backend = "hatchling.build"
 managed = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["core", "pipeline", "config", "morphology", "pairing", "karyogram", "data", "utils", "training"]
+packages = [
+    "code_refactored/ai_training",
+    "code_refactored/config",
+    "code_refactored/medical_pipeline",
+    "code_refactored/models",
+    "code_refactored/pwarp",
+    "code_refactored/utils"
+]
 py-modules = ["main"]
