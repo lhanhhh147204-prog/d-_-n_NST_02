@@ -1,0 +1,22 @@
+{
+  "dice_A": 0.9726562525249075,
+  "iou_A": 0.9473899692279216,
+  "dice_B": 0.9719223305314129,
+  "iou_B": 0.946075426119474,
+  "dice_C": 0.9027689346203223,
+  "iou_C": 0.8258413729068753,
+  "mean_dice_ABC": 0.9491158392255474,
+  "mean_iou_ABC": 0.9064355894180903,
+  "pixel_acc_ABC": 0.9959339057074653,
+  "accuracy_percent_main_diceABC": 94.91158392255475,
+  "pixel_accuracy_percent": 99.59339057074652,
+  "samples": 450.0,
+  "model_path": "/content/results/best_for_apply_inference.keras",
+  "dataset_dir": "/content/dataset",
+  "split": "test",
+  "all_samples_in_split": 450,
+  "evaluated_samples": 450,
+  "threshold_A": 0.5,
+  "threshold_B": 0.5,
+  "threshold_C": 0.4000000059604645
+}
