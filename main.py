@@ -8,6 +8,9 @@ import io
 import argparse
 from pathlib import Path
 
+# Thêm thư mục code_refactored vào sys.path để main.py có thể gọi code bên trong khi bị đưa ra ngoài
+sys.path.insert(0, str(Path(__file__).parent / "code_refactored"))
+
 # Fix encoding cho Windows terminal (CP1252 -> UTF-8)
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ('utf-8', 'utf8'):
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')

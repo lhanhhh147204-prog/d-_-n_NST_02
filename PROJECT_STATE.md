@@ -1,10 +1,11 @@
 # PROJECT STATE & MEMORY (Hệ thống Nhớ của AI)
 
-> **Mục đích:** File này lưu trữ trạng thái hiện tại của dự án, các vấn đề đã kiểm chứng, và lộ trình sửa lỗi. AI phải luôn đọc file này trước khi đề xuất giải pháp để đảm bảo bám sát ngữ cảnh, không bị lan man sang các phần không cần thiết.
+> **Mục đích:** File này lưu trữ trạng thái hiện tại của dự án, các vấn đề đã kiểm chứng, và lộ trình sửa lỗi. 
+> **NGUYÊN TẮC TỐI THƯỢNG:** AI phải LUÔN LUÔN đọc file này VÀ `AI_RULES.md` TRƯỚC KHI đề xuất giải pháp, viết code, hoặc tiếp nhận ý tưởng mới từ User. Mọi thay đổi đều phải được ĐỐI CHIẾU ngược lại với bộ nhớ này để đảm bảo không phá vỡ dự án.
 
 ## 1. Trạng thái Pipeline (End-to-End)
 - **Đã thông luồng (Working):** Pipeline chạy hoàn chỉnh từ đầu đến cuối (Từ 1 bức ảnh nguyên vẹn -> Cắt cụm -> Tách chồng chéo -> Duỗi thẳng -> Phân loại -> Ghép cặp -> Karyogram).
-- **Mô hình U-Net Tách Cụm (Bước 3):** Đã có file trọng số `best_teacher.keras`. AI đã có thể trích xuất NST, dù có thể sót 1-2 NST (VD test `9250100210.1.k.JPG` ra 45/46 NST).
+- **Mô hình U-Net Tách Cụm (Bước 3):** Đã có file trọng số `best_for_apply_inference.keras` (Inference Model siêu nhẹ 71MB). Trọng số Teacher đã được lưu trữ an toàn. AI bóc tách tốt với Dice Score >97%.
 - **Trọng tâm hiện tại:** Khâu phân loại (Classification - Bước 5) và Ghép cặp (Pairing - Bước 7).
 
 ## 2. Vấn đề cốt lõi cần giải quyết ngay (Blocking Issues)
@@ -26,3 +27,7 @@
 ## 4. Ràng buộc (Rules to Remember)
 - Dữ liệu train gốc KHÔNG BAO GIỜ ĐƯỢC XÓA (đặc biệt thư mục `dataset`).
 - Khi sửa code liên quan đến NST, tuyệt đối không sử dụng thuật toán làm bóp méo, co giãn sai tỷ lệ sinh học của NST.
+
+## 5. QUY TẮC KIỂM THỬ (TESTING RULES)
+- **Hình ảnh trực quan:** Khi chạy test, **MỖI BƯỚC** đều phải xuất ra hình ảnh minh họa chi tiết kèm theo giải thích cách thức hoạt động.
+- **Dữ liệu chuẩn:** **LUÔN LUÔN** lấy file ảnh gốc `c:\Users\lehoa\dự_án_NTS\data\raw\2025\9250100210.1.k.JPG` làm nguồn dữ liệu đầu vào chuẩn để test các bước trong dự án.

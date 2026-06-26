@@ -32,23 +32,6 @@ NST_new/
 └── project_notebook.ipynb # Notebook nghiên cứu gốc (Dùng làm tham khảo)
 ```
 
-## 🛠️ Hướng dẫn cài đặt và sử dụng
-
-Dự án sử dụng công cụ [uv](https://github.com/astral-sh/uv) để quản lý môi trường.
-
-### 1. Cài đặt môi trường
-Mở Terminal tại thư mục của dự án và chạy:
-```bash
-uv sync
-```
-
-### 2. Chạy Pipeline Xử Lý Một Ảnh
-Để chạy toàn bộ quá trình từ ảnh gốc ra Karyogram:
-```bash
-uv run main.py --step full_pipeline --input-dir "duong_dan_den_anh_goc.JPG"
-```
-*Kết quả (bao gồm ảnh từng bước và Karyogram cuối cùng) sẽ được lưu trong thư mục `results/`.*
-
 ### 3. Huấn luyện mô hình AI (Dành cho Developer)
 - Huấn luyện U-Net (Tách cụm chồng): `uv run train_dual_branch.py`
 - Huấn luyện SwinKaryotype (Phân loại): `uv run train_karyotype.py`
